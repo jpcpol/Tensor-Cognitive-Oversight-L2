@@ -23,9 +23,15 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-012 | Scripts de análisis estadístico | Recomendado | Pendiente |
 | DT-013 | `integrity_checker.py` pre-sesión | Recomendado | Pendiente |
 | DT-014 | Protocolo de consentimiento informado | Recomendado | Pendiente |
-| DT-015 | Sección Related Work del paper | Recomendado | Pendiente |
+| DT-015 | Sección Related Work del paper | Recomendado | Implementado |
 | DT-016 | Adaptar paper a formato LaTeX/ACM | Recomendado | Implementado |
-| DT-017 | Implementar ArtifactCache (Redis) | Recomendado | Decisión Tomada |
+| DT-017 | Implementar ArtifactCache (Redis) | Recomendado | Implementado |
+| DT-018 | Paper — Defender necesidad matemática del tensor | Importante | Pendiente |
+| DT-019 | Paper — Gate formal de validación φ pre-piloto | Crítica | Pendiente |
+| DT-020 | Paper — Reencuadrar con narrativa expertise shift | Recomendado | Pendiente |
+| DT-021 | Suite de calibración φ (Spearman ρ) | Crítica | Pendiente |
+| DT-022 | Rubrica PIQ a nivel struct para H5 | Importante | Pendiente |
+| DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Pendiente |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
@@ -249,5 +255,121 @@ Threshold: κ ≥ 0.70 por dimensión antes de usar el LLM-Judge en el experimen
 
 ---
 
-*Última actualización: Abril 2026*  
+---
+
+## CRÍTICA (nuevas) — Bloquean la validez del experimento
+
+### DT-019 · Gate formal de validación φ pre-piloto
+
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Section 7.6) + nuevo protocolo  
+**Estado:** Pendiente — bloqueador para Semana 5 (pilot)  
+**Descripción:** La validación de φ existe mencionada como "amenaza a la validez" pero no está especificada como gate formal de no-go. Necesita:
+
+1. Definir el protocolo de calibración: 20–30 artefactos sintéticos con ground truth conocido (incluyendo los 5 escenarios S1–S5 con sus deltas vectoriales documentados)
+2. Criterio de no-go explícito: si Spearman ρ < 0.75 en cualquiera de v₄, v₆, v₇, v₈ → no se procede al piloto
+3. Plan de acción en caso de no-go: ajuste de prompts del QA Agent, re-calibración de normalization bounds en radon_runner/bandit_runner
+4. En el paper (Section 7.6): convertir el párrafo de QA circularity threat en una subsección con el protocolo formal y el criterio cuantitativo de aprobación
+
+**Relación:** Depende de DT-021. Debe completarse antes de Semana 5.
+
+---
+
+### DT-021 · Suite de calibración φ — medición Spearman ρ
+
+**Componente:** `src/experiment/phi_calibration/` (nuevo directorio)  
+**Estado:** Pendiente — bloqueador para Semana 5 (pilot)  
+**Descripción:** Implementar herramienta que mida automáticamente el acuerdo entre LLM-QA y análisis estático en las dimensiones donde ambos tienen cobertura:
+
+- **v₄ security_risk:** LLM semantic_security (no está actualmente en EvaluationMetrics — agregar) vs. Bandit weighted_severity
+- **v₆ testability:** LLM semantic_testability vs. Radon (1 − cyclomatic_norm)
+- **v₇ maintainability:** LLM semantic_maintainability vs. Radon maintainability (MI)
+- **v₈ technical_debt:** LLM semantic_debt_assessment (agregar) vs. Radon debt_ratio
+
+Outputs del script:
+- Spearman ρ por dimensión con intervalo de confianza 95%
+- Scatter plots LLM vs. estático por dimensión
+- Reporte de casos outlier (artefactos donde ρ diverge más de 0.3)
+- Decisión go/no-go automática con resumen
+
+**Acción en EvaluationMetrics:** Agregar `semantic_security: float` y `semantic_debt_assessment: float` al modelo Pydantic en `qa_evaluator.py` para habilitar la comparación en v₄ y v₈.
+
+---
+
+## IMPORTANTE (nuevas) — Bajan el rigor metodológico si faltan
+
+### DT-018 · Paper — Defender necesidad matemática del tensor
+
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` Section 5.3  
+**Estado:** Pendiente — bloqueador de calidad para submission  
+**Descripción:** Crítica anticipada: "el tensor es una metáfora matemática conveniente, no una necesidad". El paper necesita un argumento explícito. Insertar un párrafo en Section 5.3 (Layer 4 — The Cognitive Tensor) con la siguiente estructura:
+
+**¿Por qué un tensor y no una tabla relacional?**
+
+La respuesta es S3 y S5:
+- S3 (acumulación temporal de deuda): indetectable sin `T[d,:,:,k] − T[d,:,:,k−3]` — requiere el eje temporal k indexado conjuntamente con las dimensiones d
+- S5 (conflicto inter-agente): indetectable sin `|T[d,i,j₁,k] − T[d,i,j₂,k]|` — requiere comparar dos agentes en la misma dimensión, etapa y ciclo simultáneamente
+
+Una tabla relacional puede almacenar los mismos datos, pero la operación semánticamente natural (`CONFLICT WHERE agent1.v[d] - agent2.v[d] > 0.30 AT SAME stage AND cycle`) requiere un JOIN autorecursivo de 11 columnas que destruye la legibilidad del motor de inferencia. El tensor hace esta operación first-class.
+
+**Agregar también:** Nota al pie o recuadro comparando operaciones de slicing en tensor vs. queries SQL equivalentes.
+
+---
+
+### DT-022 · Rubrica PIQ a nivel struct para H5 (LLM-Judge)
+
+**Componente:** `protocols/piq_rubric.md` (nuevo) + `src/experiment/piq_evaluation/`  
+**Estado:** Pendiente  
+**Descripción:** El LLM-Judge para H5 actualmente evaluará la "calidad de la política inyectada" pero no hay rubrica definida. Necesita:
+
+**Dimensiones de scoring para PolicyIntent:**
+
+| Dimensión | Descripción | Escala |
+| --------- | ----------- | ------ |
+| target_precision | ¿Los agentes target son los correctamente afectados por el fallo? | 0–1 |
+| dimension_relevance | ¿Las affected_dimensions mapean correctamente al fallo detectado? | 0–1 |
+| constraint_specificity | ¿El constraint es accionable y específico (no genérico)? | 0–1 |
+| action_appropriateness | ¿El action_type es el correcto para el tipo de fallo? | 0–1 |
+| scope_calibration | ¿El priority y scope son proporcionales al impacto del fallo? | 0–1 |
+
+**PIQ_score = media ponderada de las 5 dimensiones** (pesos a definir en calibración Semana 6)
+
+**Calibración:** 2 expertos externos + LLM-Judge en 10 políticas de entrenamiento. Threshold: κ ≥ 0.70 por dimensión antes de usar el LLM-Judge en el experimento completo (reutiliza DT-011).
+
+---
+
+## RECOMENDADO (nuevas) — Elevan el argumento y la reproducibilidad
+
+### DT-020 · Paper — Reencuadrar con narrativa "expertise shift"
+
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Introduction + Abstract)  
+**Estado:** Pendiente  
+**Descripción:** El framing actual de la Introducción enfatiza "reducción de carga cognitiva". El argumento más potente (identificado en evaluación externa) es el **desplazamiento del expertise**:
+
+> TCO no dice que la experiencia técnica desaparece. Dice que el expertise se desplaza desde manipular artefactos hacia supervisar comportamientos emergentes. Cuanto más autónoma es la IA, más crítica se vuelve la capacidad de supervisión sistémica.
+
+Cambios necesarios:
+1. **Abstract:** agregar sentence sobre el expertise shift como claim central
+2. **Introduction (párrafo 3–4):** reencuadrar el problema no como "sobrecarga" sino como "nivel de abstracción incorrecto para el nuevo rol del ingeniero"
+3. **Section 4.2** (Incorrect Abstraction Level): expandir con el paralelo SRE/observabilidad: así como los SREs pasaron de monitorear paquetes a supervisar estado agregado, los ingenieros de IA pasan de validar artefactos a orquestar comportamientos sistémicos
+4. **Section 10.1** (Theoretical Contributions): agregar NCF como constructo de diseño HCI para el nuevo rol del "orchestration engineer"
+
+---
+
+### DT-023 · Script "tensor necessity proof" en analysis/
+
+**Componente:** `analysis/tensor_necessity.py` (nuevo)  
+**Estado:** Pendiente  
+**Descripción:** Script de análisis que demuestra empíricamente que S3 y S5 son indetectables con evaluación individual de artefactos, y detectables con slicing tensorial.
+
+Metodología:
+1. Simular los datos del escenario S3 (v₈ degrada −0.08 por ciclo durante 3 ciclos) y S5 (conflicto inter-agente ΔΡ = 0.41)
+2. Ejecutar "revisión individual" simulada: evaluar cada artefacto por separado, sin contexto temporal ni inter-agente → mostrar que el cambio de −0.08/ciclo es invisible dentro del ruido de evaluación individual
+3. Ejecutar detección tensorial: aplicar `Δ[d,i,j,k]` y `|T[d,i,j₁,k] − T[d,i,j₂,k]|` → mostrar que el acumulado de 3 ciclos (−0.24 total) supera el threshold de alerta
+4. Output: figura lado-a-lado "artifact-level view" vs "tensor view" para S3 y S5
+
+Este análisis es la evidencia empírica directa contra "tensor washing". Incluir en el paper como Figure 2 (Section 5.3).
+
+---
+
+*Última actualización: Mayo 2026*  
 *Próxima revisión: al completar Semana 2 del roadmap*
