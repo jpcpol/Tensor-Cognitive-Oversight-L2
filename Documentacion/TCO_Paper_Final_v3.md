@@ -274,12 +274,14 @@ where:  wᵢⱼ = weight of metric j within pilar i  (calibrable by domain)
 
 > ↓ = inverted pillars: higher raw score = worse quality → normalized as (1 − raw)
 
+> **Epistemological note — LLM-sourced dimensions (v₁, v₂, v₃, v₉):** These four dimensions are computed via LLM-QA evaluation and do not have strong universal ground truth. They should be understood as **supervisory estimators** — heuristic semantic signals that provide decision-relevant information to the orchestrator, not objective quality certificates. Their value lies in enabling rapid cross-artifact and cross-temporal comparison within the same pipeline context, not in absolute calibration. Static analysis dimensions (v₄, v₆, v₇, v₈) are grounded in deterministic computation and have verifiable ground truth; the LLM dimensions are explicitly distinct in epistemological status.
+
 #### 4.2.3 Formal Properties of V
 
 The vector V must satisfy four formal properties to function as a valid cognitive interface:
 
 - **P1 — Normalization:** `∀i : vᵢ ∈ [0,1]`. Enables comparison across contexts without scale distortion.
-- **P2 — Semantic independence:** Pillars are conceptually orthogonal. An artifact may have high `functional_correctness` and low `maintainability` simultaneously — this is information, not contradiction.
+- **P2 — Approximate orthogonality:** Pillars are *supervisoriamente distinguishable* — each captures a distinct oversight concern that provides non-redundant decision-relevant signal to the orchestrator, even when dimensions partially correlate empirically (e.g. maintainability ↔ technical_debt). An artifact may simultaneously have high `functional_correctness` and low `maintainability` — this is diagnostic information, not contradiction. Strict statistical independence is not claimed; supervisory distinguishability is. (See Section 5.X for inter-dimension correlation analysis on the calibration corpus.)
 - **P3 — Comparability:** The same vector semantics apply across agents, stages, and time instants. V_{agent₁, stage₁, t₁} is directly comparable to V_{agent₂, stage₂, t₂}.
 - **P4 — Extensibility:** The base specification uses n=11; domain-specific dimensions may be added without altering the aggregation or inference architecture.
 
@@ -397,6 +399,19 @@ The NCF is grounded in three convergent theoretical bases:
 | Without AI (all manual) | HITL Traditional (raw outputs) | TCO — NCF (target zone) |
 |------------------------|-------------------------------|-------------------------|
 | Low demand but low productive capacity. Human carries all production complexity. | Cognitive overload. Maximum extraneous load. Brain fry. High error rate from fatigue. | Calibrated demand. Active germane load. Natural language judgment. Maximum cognitive efficiency. |
+
+#### 4.5.0 NCF Operationalization — Observable Proxies
+
+The NCF is a theoretical construct and must be operationalized with measurable proxies to avoid appearing purely philosophical. The following table maps each NCF property to an observable variable and a concrete measurement instrument used in the TCO experiment. The experimental prediction is that participants in the TCO condition will show better outcomes on all four proxies than the control group.
+
+| NCF Property | Observable Variable | Operational Measure | Instrument |
+|---|---|---|---|
+| Working memory not saturated | Working memory saturation | NASA Raw-TLX subscales: mental demand + frustration (lower = better) | Post-task Raw-TLX questionnaire |
+| Sustained supervisory coherence | Supervisory coherence | Consistency of correction severity across same-type faults: σ(severity) per fault category | Structured correction log |
+| Stable quality judgment | Cognitive stability | Variance of detection accuracy across task cycles T1→T4: σ(accuracy) over time | Scored task outcomes |
+| Undivided attention | Attention fragmentation | Inter-quartile range of time-to-first-correction within each scenario: IQR(latency) | Interaction timer |
+
+These proxies transform NCF from a design concept into a testable claim: the TCO architecture should produce lower Raw-TLX, more consistent corrections, more stable accuracy, and tighter latency distributions than raw-output HITL. Each proxy is captured automatically by the experiment infrastructure (interaction logger + NASA-TLX form) without additional participant burden.
 
 #### 4.5.1 Why Natural Language is the Correct Interface
 
@@ -1498,7 +1513,8 @@ Natural language policy injection is the most expressive and least constrained c
 
 ### 10.3 Future Work
 
-- **Real-world deployment validation** across multiple organizational contexts and AI development stacks.
+- **Replication and scope extension:** The n=40 between-subjects experiment reported here is designed as preliminary evidence suitable for a CHI workshop or FSE short paper. Claims about cognition, expertise transition, and multi-agent oversight should not be generalized beyond this scope. Future work requires: (a) replication with independent participant pools, (b) multi-site studies across organizational contexts, and (c) longitudinal observation to distinguish learning effects from sustained NCF operation. The current study establishes proof-of-concept, not universal theory.
+- **Real-world deployment validation** across multiple organizational contexts and AI development stacks beyond the simulated pipeline used in this study.
 - **Adaptive vector learning:** automated recalibration of wᵢⱼ weights based on observed correlations between vector values and deployment outcomes.
 - **Integration with observability platforms:** mapping TCO quality dimensions to existing metric streams (Prometheus, OpenTelemetry) to reduce instrumentation overhead.
 - **Autonomous policy suggestion:** training a policy generation model on historical P_new entries and their system impact to provide policy drafts for orchestrator review.

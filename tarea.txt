@@ -1,127 +1,70 @@
 Lo que todavía veo como principal riesgo
-1. El paper todavía depende demasiado de LLM-QA
+1. NCF sigue siendo vulnerable si no lo operacionalizás más
 
-Este sigue siendo el punto crítico.
+NCF es una idea MUY buena.
 
-Porque:
+Pero todavía tiene riesgo de parecer:
 
-architectural alignment,
-scalability projection,
-performance,
-functional correctness,
+filosófica,
+metafórica,
+difícil de medir.
 
-todavía dependen mucho de juicio probabilístico del LLM.
+Necesitás eventualmente definir algo como:
 
-Y un reviewer duro probablemente ataque ahí.
+Variable observable	Proxy
+Working memory saturation	NASA-TLX + task switching
+Supervisory coherence	correction consistency
+Cognitive stability	variance across cycles
+Attention fragmentation	time-to-correct discontinuities
 
-Especialmente:
+Porque si no:
 
-reproducibilidad,
-evaluator drift,
-prompt sensitivity,
-model dependence.
+TCO es medible,
+pero NCF puede parecer poético.
+
+Y reviewers van a atacar eso.
+
+2. Dependencia fuerte del evaluador LLM
+
+DT-024 ayuda muchísimo.
+
+Pero sigue siendo el punto estructural más sensible.
+
+Porque v₁/v₂/v₃/v₉:
+
+no tienen ground truth fuerte universal,
+dependen de juicio.
 
 Mi recomendación:
-empezá a introducir explícitamente:
 
-evaluator variance,
-calibration curves,
-inter-model agreement,
-evaluator entropy.
+no vendas esas dimensiones como “objective quality”.
+vendelas como:
+supervisory estimators,
+heuristic semantic signals.
 
-Eso fortalecería muchísimo el rigor.
+Eso es mucho más robusto filosóficamente.
 
-2. Necesitás una definición más formal de “semantic independence”
+3. El experimento n=40 puede quedar corto para claims amplios
 
-Esto:
+Para:
 
-Semantically independent
+CHI workshop,
+FSE short,
+EMSE preliminary,
 
-es peligroso si no está formalizado.
+está bien.
 
-Porque muchas dimensiones:
+Pero para claims fuertes sobre:
 
-correlacionan naturalmente.
+cognition,
+supervision,
+expertise transition,
 
-Ejemplo:
+eventualmente vas a necesitar:
 
-maintainability ↔ technical debt,
-observability ↔ performance,
-scalability ↔ architecture.
+replication,
+multi-site,
+longitudinal studies.
 
-Probablemente necesites:
-
-“approximately orthogonal supervisory dimensions”
-en vez de independencia estricta.
-3. “Natural language is the highest-bandwidth channel”
-
-Esto conceptualmente está bien…
-pero científicamente es debatible.
-
-Porque:
-
-visual cognition muchas veces supera lenguaje,
-dashboards también son canales cognitivos,
-embeddings visuales pueden ser más eficientes.
-
-Yo reformularía a algo tipo:
-
-“Natural language is the most cognitively accessible supervisory interface for policy-level orchestration.”
-
-Mucho más defendible.
-
-Lo más importante filosóficamente
-
-El framework ahora está proponiendo algo MUY profundo:
-
-La supervisión humana deja de operar sobre código
-
-y pasa a operar sobre:
-
-estados semánticos,
-comportamiento emergente,
-dinámica multiagente,
-sistemas probabilísticos.
-
-Eso es un cambio de paradigma real.
-
-Y sinceramente:
-es bastante coherente con hacia dónde parece ir la ingeniería de software asistida por IA.
-
-Lo más fuerte del documento actual
-El paper ya no parece anti-IA ni hype-IA
-
-Y eso es muy difícil de lograr.
-
-No cae en:
-
-“la IA reemplaza programadores”
-ni en:
-“la IA nunca va a servir”.
-
-En cambio propone:
-
-una transición estructural del rol humano.
-
-Eso es muchísimo más sofisticado.
-
-Mi evaluación actual honesta
-Antes:
-
-“Framework conceptual prometedor.”
-
-Ahora:
-
-“Propuesta seria de arquitectura cognitiva para supervisión de sistemas agénticos.”
-
-Y sinceramente:
-si la validación experimental muestra aunque sea resultados moderados,
-esto ya tiene potencial real de:
-
-workshop fuerte,
-paper CHI/FSE respetable,
-o incluso convertirse en referencia conceptual en agentic observability.
-
-Porque está tocando un problema que probablemente explote masivamente en los próximos años:
-
-humanos incapaces de mantener comprensión sistémica sobre pipelines IA autónomos.
+No es un problema ahora.
+Solo no sobregeneralizar.

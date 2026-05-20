@@ -34,6 +34,8 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Pendiente |
 | DT-024 | Paper — Evaluator variance y rigor LLM-QA | Importante | Pendiente |
 | DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Pendiente |
+| DT-026 | Experimento — 4 proxies NCF operacionalizados en infra | Importante | Pendiente |
+| DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Pendiente |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
@@ -415,6 +417,63 @@ Este análisis es la evidencia empírica directa contra "tensor washing". Inclui
 3. **Análisis de correlación**: En la suite de calibración φ (`phi_calibration.py`), añadir cómputo de matriz de correlación inter-dimensiones sobre el corpus. Reportar los 3 pares con mayor correlación. Si algún par tiene ρ > 0.90, considerar fusión o justificación explícita de por qué se mantienen separados.
 
 **Prioridad real**: El cambio de lenguaje es urgente (1 hora). El análisis de correlación depende del corpus de calibración (Semana 3).
+
+---
+
+## IMPORTANTE (tercera revisión) — Cierran vulnerabilidades de la segunda evaluación externa
+
+### DT-026 · Experimento — Implementar 4 proxies de operacionalización del NCF
+
+**Componente:** `src/experiment/` (NASA-TLX form, correction log, accuracy scorer, interaction timer)  
+**Estado:** Pendiente  
+**Descripción:** El NCF fue definido conceptualmente, pero sin proxies observables concretos queda vulnerable a la crítica de "filosófico / inmedible". La evaluación externa identificó exactamente este riesgo. El experimento ya tiene la infraestructura base; este ítem cierra el gap de medición.
+
+**4 proxies a implementar:**
+
+| NCF Property | Variable | Medida operacional | Instrumento a implementar |
+| --- | --- | --- | --- |
+| Working memory not saturated | Working memory saturation | NASA Raw-TLX: mental demand + frustration | Formulario digital post-task |
+| Supervisory coherence | Correction consistency | σ(severity) por categoría de fallo | Correction log con campo `category` |
+| Cognitive stability | Accuracy variance | σ(accuracy) across T1→T4 | Accuracy scorer automático por tarea |
+| Attention fragmentation | Latency discontinuities | IQR(time-to-first-correction) | Interaction timer con cómputo IQR |
+
+**Cambios en infraestructura:**
+
+1. `src/experiment/data_pipeline/nasa_tlx_form.py` — formulario digital con los 6 subscales Raw-TLX (mental demand, physical demand, temporal demand, effort, performance, frustration). Extrae mental_demand + frustration para el proxy de working memory saturation.
+2. `src/experiment/data_pipeline/correction_log.py` — añadir campo `fault_category` al schema de corrección. Cómputo de σ(severity) por categoría al final de la sesión.
+3. `src/experiment/data_pipeline/accuracy_scorer.py` — score binario por tarea (T1: fault detected, T2: risk level correct, T3: deploy decision correct, T4: re-orchestration correct). Cómputo de σ(accuracy) al final.
+4. `src/experiment/data_pipeline/interaction_timer.py` — añadir timestamp `first_correction_at` por artefacto presentado. Cómputo de IQR al finalizar la sesión.
+
+**Cuándo:** Semana 4 (antes del piloto). Depende de DT-013 (integrity_checker).
+
+---
+
+### DT-027 · Paper — Reencuadre sistemático de v₁,v₂,v₃,v₉ como "supervisory estimators"
+
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (múltiples secciones) + `Documentacion/TCO_LaTeX/main.tex`  
+**Estado:** Pendiente — reencuadre parcialmente aplicado en Section 5.2; falta sweep completo  
+**Descripción:** La evaluación externa identificó que presentar v₁, v₂, v₃, v₉ como "objective quality" es epistemológicamente vulnerable. Un reviewer duro puede atacar la falta de ground truth universal para estas dimensiones LLM. La respuesta correcta no es evitar las dimensiones — es distinguir explícitamente su estatus epistemológico del de las dimensiones de análisis estático.
+
+**Distinción central a establecer:**
+
+- **Dimensiones estáticas** (v₄, v₆, v₇, v₈): fuente determinista, ground truth verificable contra bandit/radon, validables con Spearman ρ ≥ 0.75. Son métricas objetivas.
+- **Dimensiones LLM** (v₁, v₂, v₃, v₉): **supervisory estimators** — heuristic semantic signals. Proveen información decision-relevante al orquestador. No son certificados de calidad objetiva. No tienen ground truth universal. Su valor es supervisorio, no métrico.
+
+**Cambios necesarios (sweep completo):**
+
+1. **Buscar y reemplazar** en paper y LaTeX: cualquier instancia de "objective quality", "objective measure", "accurately measures" referida a v₁/v₂/v₃/v₉ → reemplazar con "supervisory estimate" / "heuristic semantic signal".
+
+2. **Section 5.2** (ya parcialmente actualizado): La nota epistemológica en blockquote debe quedar como texto principal, no solo como blockquote opcional. Integrar en el flujo argumentativo.
+
+3. **Section 7 (Experimental Design)**: En la descripción de las dimensiones usadas como variables en el experimento, distinguir explícitamente el tipo de validación esperado para cada grupo (Spearman vs. PIQ scoring).
+
+4. **Section 9 (Threats to Validity)**: Añadir párrafo explícito sobre la limitación epistemológica de las dimensiones LLM y por qué esta limitación no invalida el diseño (el valor es supervisorio, la validación es por utilidad de decisión, no por precisión métrica).
+
+5. **Aplicar en LaTeX** (main.tex): asegurar que el mismo lenguaje se usa en tablas, captions y el abstract.
+
+**Prioridad**: Media-alta. El Section 5.2 ya está parcialmente correcto. El sweep completo puede hacerse en 2–3 horas antes de cualquier submission draft.
+
+**Diferencia con DT-024**: DT-024 se enfoca en *métricas de varianza del evaluador* (σ de scores, calibration curves, inter-model agreement) — evidencia empírica de estabilidad. DT-027 se enfoca en el *framing epistemológico* — el lenguaje que establece qué tipo de cosa son estas dimensiones. Son complementarios: DT-024 prueba que el estimador es estable; DT-027 establece que nunca se presentó como algo más que un estimador.
 
 ---
 
