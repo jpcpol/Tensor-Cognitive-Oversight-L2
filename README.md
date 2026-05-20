@@ -69,7 +69,7 @@ The analogy to SRE practice: Datadog and New Relic moved infrastructure teams fr
 │  f: {V} → T ∈ ℝⁿˣˢˣᵃˣᵗ   ·   dimension × stage × agent × time     │
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 3 — Vectorization  φ: A → V ∈ [0,1]¹¹                        │
-│  V = (v₁...v₁₁) · Normalized · Semantically independent            │
+│  V = (v₁...v₁₁) · Normalized · ~Orthogonal supervisory dims         │
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 2 — QA Evaluation (Multi-agent)                              │
 │  QA Agent · Security Agent · Perf Agent · Arch Agent               │
@@ -134,7 +134,7 @@ The transition analogy: glass cockpit (aviation, 1980s–90s). Pilots stopped re
 TCO maintains the orchestrator at the NCF by:
 1. Pre-processing complexity into semantically interpretable state representations (Layers 3–5)
 2. Requiring active interpretive judgment as the mechanism of loop closure (Layer 6)
-3. Accepting policy responses in natural language — the highest-bandwidth cognitive channel available to humans
+3. Accepting policy responses in natural language — the most cognitively accessible supervisory interface for policy-level orchestration
 
 ---
 

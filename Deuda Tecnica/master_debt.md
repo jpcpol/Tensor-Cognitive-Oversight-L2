@@ -9,7 +9,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 
 | ID | Descripción breve | Categoría | Estado |
 | -- | ----------------- | --------- | ------ |
-| DT-001 | Instalar entornos de dependencias | Crítica | Pendiente |
+| DT-001 | Instalar entornos de dependencias | Crítica | Implementado |
 | DT-002 | Implementar `vectorizer.py` | Crítica | Implementado |
 | DT-003 | Implementar prompt del QA Agent | Crítica | Implementado |
 | DT-004 | Implementar `ControlGroupViewer.tsx` | Crítica | Implementado |
@@ -32,6 +32,8 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-021 | Suite de calibración φ (Spearman ρ) | Crítica | Implementado |
 | DT-022 | Rubrica PIQ a nivel struct para H5 | Importante | Pendiente |
 | DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Pendiente |
+| DT-024 | Paper — Evaluator variance y rigor LLM-QA | Importante | Pendiente |
+| DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Pendiente |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
@@ -43,15 +45,16 @@ que deberá abordarse antes de la submission final o el experimento completo.
 ### DT-001 · Instalar y configurar entornos de dependencias
 
 **Componente:** Todos  
-**Estado:** Pendiente  
-**Descripción:** Ningún paquete del stack está instalado en el entorno local. Requiere:
+**Estado:** Implementado — venv único en `.venv/` (Python 3.14), Node 24.14.0  
+**Descripción:** Stack completo instalado en `.venv/` raíz del repo. Requirements actualizados a `>=` bounds con numpy>=2.0.0 para compatibilidad Python 3.13+.
 
-- `src/tco_engine/`: `pip install -r requirements.txt` en virtualenv Python 3.11
-- `src/pipeline/`: `pip install -r requirements.txt` en virtualenv Python 3.11
-- `analysis/`: `pip install -r requirements.txt` en virtualenv Python 3.11
-- `src/dashboard/`: `npm install` con Node ≥ 20
+Versiones instaladas:
+- numpy 2.4.6 · fastapi 0.136.1 · uvicorn 0.47.0 · sqlalchemy 2.0.49 · asyncpg 0.31.0
+- radon 6.0.1 · bandit 1.9.4 · anthropic 0.97.0 · langgraph 1.1.9 · langchain-anthropic 1.4.1
+- pandas 3.0.3 · scipy 1.17.1 · matplotlib 3.10.9 · scikit-learn 1.8.0 · pingouin 0.6.1
+- dashboard: 196 npm packages (vite 5.x, react 18, recharts, tailwindcss)
 
-**Impacto si no se resuelve:** Nada del stack ejecuta.
+Nota: 2 vulnerabilidades moderadas en esbuild/vite dev server — afectan solo al servidor de desarrollo local, no al build de producción. Fix requeriría upgrade breaking a Vite 8.
 
 ---
 
@@ -368,6 +371,50 @@ Metodología:
 4. Output: figura lado-a-lado "artifact-level view" vs "tensor view" para S3 y S5
 
 Este análisis es la evidencia empírica directa contra "tensor washing". Incluir en el paper como Figure 2 (Section 5.3).
+
+---
+
+---
+
+## IMPORTANTE (segunda revisión) — Fortalecen el rigor metodológico ante reviewers duros
+
+### DT-024 · Paper — Evaluator variance y rigor del LLM-QA
+
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Section 8 — Software Architecture + Section 7.6 Threats)  
+**Estado:** Pendiente  
+**Descripción:** Las dimensiones v₁, v₂, v₃, v₉ dependen de juicio probabilístico del LLM. Un reviewer atacará: reproducibilidad, evaluator drift entre versiones del modelo, prompt sensitivity, model dependence. El paper necesita sección formal de rigor del evaluador.
+
+**Cambios necesarios en el paper:**
+
+1. **Evaluator variance**: correr el mismo artefacto N=10 veces con el mismo prompt, reportar σ de scores por dimensión. Threshold aceptable: σ < 0.05 para v₁, v₂, v₃, v₉.
+
+2. **Calibration curves**: para cada dimensión LLM, graficar `confidence_self_assessment` vs error absoluto contra ground truth. Una calibración bien ajustada mostraría que alta confianza LLM → bajo error.
+
+3. **Inter-model agreement**: correr el corpus de calibración con un segundo modelo (GPT-4o o Gemini). Reportar Spearman ρ entre scores de ambos modelos por dimensión. ρ ≥ 0.70 indicaría que la señal es robusta al modelo específico.
+
+4. **Evaluator entropy**: para cada dimensión, calcular la entropía de la distribución de scores sobre el corpus. Alta entropía indicaría inestabilidad del evaluador — umbral de alerta: H > 0.80 nats.
+
+**Sección a añadir**: "5.X LLM-QA Evaluator Reliability" entre la definición del vectorizador y la definición del tensor.
+
+**Implementación**: Añadir método `run_variance_test(artifact, n=10)` a `QAEvaluator` + script `analysis/evaluator_reliability.py`.
+
+---
+
+### DT-025 · Paper — Reencuadrar independencia vectorial como "~orthogonal supervisory dimensions"
+
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Section 5.2) + `Documentacion/TCO_LaTeX/main.tex`  
+**Estado:** Pendiente — quick fix de lenguaje + análisis de correlación  
+**Descripción:** La descripción "semantically independent" es vulnerable a crítica académica. Las dimensiones correlacionan naturalmente (maintainability ↔ technical_debt, observability ↔ performance, scalability ↔ architecture). La afirmación de independencia estricta es indefendible.
+
+**Cambios necesarios:**
+
+1. **Cambio de lenguaje** (ya aplicado en paper y README para el diagrama de arquitectura): `"Semantically independent"` → `"~Orthogonal supervisory dimensions"`. Aplicar en todas las ocurrencias del paper y LaTeX.
+
+2. **Argumento explícito**: Añadir párrafo en Section 5.2 argumentando que las 11 dimensiones son *supervisoriamente distinguibles* aunque correlacionen parcialmente, igual que en Multidimensional Quality Metrics (MQM) en traducción automática [18] — la correlación no invalida la utilidad diagnóstica diferencial de cada dimensión.
+
+3. **Análisis de correlación**: En la suite de calibración φ (`phi_calibration.py`), añadir cómputo de matriz de correlación inter-dimensiones sobre el corpus. Reportar los 3 pares con mayor correlación. Si algún par tiene ρ > 0.90, considerar fusión o justificación explícita de por qué se mantienen separados.
+
+**Prioridad real**: El cambio de lenguaje es urgente (1 hora). El análisis de correlación depende del corpus de calibración (Semana 3).
 
 ---
 

@@ -220,7 +220,7 @@ TCO is structured as a six-layer architecture in which each layer transforms sys
 │  f: {V} → T ∈ ℝⁿˣˢˣᵃˣᵗ   ·   stage × agent × time                 │
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 3 — Vectorization  φ: A → V ∈ [0,1]ⁿ                        │
-│  V = (v₁...v₁₁) · Normalized · Semantically independent             │
+│  V = (v₁...v₁₁) · Normalized · ~Orthogonal supervisory dimensions    │
 ├─────────────────────────────────────────────────────────────────────┤
 │  LAYER 2 — QA Evaluation (Multi-agent)                              │
 │  QA Agent · Security Agent · Perf Agent · Arch Agent                │
@@ -384,7 +384,7 @@ The trend analysis output **Δ is the most strategically valuable component** of
 >
 > The Natural Cognitive Frontier is the level of abstraction at which a human agent operates with maximum cognitive efficiency: demand sufficient to activate real judgment, expressible in the human's natural language, without exceeding the capacity of working memory.
 >
-> TCO is architecturally designed to maintain the human orchestrator at the NCF by: (1) pre-processing system complexity into semantically interpretable state representations; (2) requiring active interpretive judgment as the mechanism of closure of the bidirectional loop; and (3) accepting policy responses in natural language — the highest-bandwidth cognitive channel available to humans.
+> TCO is architecturally designed to maintain the human orchestrator at the NCF by: (1) pre-processing system complexity into semantically interpretable state representations; (2) requiring active interpretive judgment as the mechanism of closure of the bidirectional loop; and (3) accepting policy responses in natural language — the most cognitively accessible supervisory interface for policy-level orchestration.
 
 The NCF is grounded in three convergent theoretical bases:
 
