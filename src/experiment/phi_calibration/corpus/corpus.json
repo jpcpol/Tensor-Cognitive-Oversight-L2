@@ -1,0 +1,187 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-05-20T19:04:56.907092+00:00",
+  "n_artifacts": 12,
+  "scenarios": [
+    "S1",
+    "S2",
+    "S3",
+    "S4",
+    "S5"
+  ],
+  "corpus": [
+    {
+      "artifact_id": "s1_auth_clean",
+      "scenario": "S1",
+      "cycle": 0,
+      "artifact_type": "python_code",
+      "code": "import hashlib\nimport hmac\nimport logging\nfrom sqlalchemy import text\nfrom sqlalchemy.orm import Session\n\nlogger = logging.getLogger(__name__)\n\n\ndef authenticate_user(db: Session, username: str, password: str) -> dict | None:\n    logger.info(\"Auth attempt: %s\", username)\n    row = db.execute(\n        text(\"SELECT id, password_hash FROM users WHERE username = :u\"),\n        {\"u\": username},\n    ).fetchone()\n    if not row:\n        logger.warning(\"User not found: %s\", username)\n        return None\n    candidate = hashlib.sha256(password.encode()).hexdigest()\n    if not hmac.compare_digest(row.password_hash, candidate):\n        logger.warning(\"Invalid credentials: %s\", username)\n        return None\n    logger.info(\"Authenticated user id=%s\", row.id)\n    return {\"id\": row.id, \"username\": username}\n\n\ndef get_user_by_id(db: Session, user_id: int) -> dict | None:\n    logger.info(\"Fetching user id=%s\", user_id)\n    row = db.execute(\n        text(\"SELECT id, username, email FROM users WHERE id = :uid\"),\n        {\"uid\": user_id},\n    ).fetchone()\n    return {\"id\": row.id, \"username\": row.username} if row else None\n",
+      "context": "User authentication module. Stage: build. Scenario: S1. No fault injected.",
+      "fault_present": false,
+      "ground_truth": {
+        "v4_security_risk_approx": 0.9,
+        "fault_present": false,
+        "expected_bandit_severity": "none"
+      }
+    },
+    {
+      "artifact_id": "s1_auth_faulty",
+      "scenario": "S1",
+      "cycle": 0,
+      "artifact_type": "python_code",
+      "code": "import hashlib\nimport logging\nfrom sqlalchemy import text\nfrom sqlalchemy.orm import Session\n\nlogger = logging.getLogger(__name__)\n\n\ndef authenticate_user(db: Session, username: str, password: str) -> dict | None:\n    # B608: SQL injection — f-string in WHERE clause\n    query = \"SELECT id, password_hash FROM users WHERE username='\" + username + \"'\"\n    row = db.execute(text(query)).fetchone()\n    if not row:\n        return None\n    # B324: use of MD5 for password hashing\n    pw_hash = hashlib.md5(password.encode()).hexdigest()\n    if row.password_hash != pw_hash:\n        return None\n    return {\"id\": row.id, \"username\": username}\n\n\ndef get_user_by_id(db: Session, user_id: int) -> dict | None:\n    # B608: SQL injection — direct concatenation\n    query = \"SELECT id, username, email FROM users WHERE id=\" + str(user_id)\n    row = db.execute(text(query)).fetchone()\n    return {\"id\": row.id, \"username\": row.username} if row else None\n",
+      "context": "User authentication module. Stage: build. Scenario: S1. SQL injection fault injected.",
+      "fault_present": true,
+      "ground_truth": {
+        "v4_security_risk_approx": 0.2,
+        "fault_present": true,
+        "expected_bandit_severity": "HIGH",
+        "fault_description": "SQL injection via f-string in WHERE clause; MD5 for password hash"
+      }
+    },
+    {
+      "artifact_id": "s2_arch_clean",
+      "scenario": "S2",
+      "cycle": 0,
+      "artifact_type": "yaml_config",
+      "code": "# service_architecture.yaml — clean version\n# Dependency graph is a valid DAG (no cycles).\n\nservices:\n  database_service:\n    provides: [connect, query, pool]\n    depends_on: []\n\n  cache_service:\n    provides: [get, set, invalidate]\n    depends_on: [database_service]\n\n  user_service:\n    provides: [authenticate, get_profile, update_profile]\n    depends_on: [database_service, cache_service]\n\n  order_service:\n    provides: [create_order, get_orders, cancel_order]\n    depends_on: [user_service, database_service]\n\n  notification_service:\n    provides: [send_email, send_push]\n    depends_on: [user_service]\n\n  api_gateway:\n    provides: [route, auth_middleware, rate_limit]\n    depends_on: [user_service, order_service, notification_service]\n\ndependency_checks:\n  max_depth: 4\n  cycles_allowed: false\n  validation: strict\n",
+      "context": "Microservice dependency architecture. Stage: design. Scenario: S2. No circular dependencies present.",
+      "fault_present": false,
+      "ground_truth": {
+        "v2_architectural_alignment_approx": 0.85,
+        "fault_present": false,
+        "expected_llm_detection": "No circular deps; proper DAG"
+      }
+    },
+    {
+      "artifact_id": "s2_arch_faulty",
+      "scenario": "S2",
+      "cycle": 0,
+      "artifact_type": "yaml_config",
+      "code": "# service_architecture.yaml — CIRCULAR DEPENDENCY FAULT\n# user_service and order_service mutually depend on each other.\n\nservices:\n  database_service:\n    provides: [connect, query, pool]\n    depends_on: []\n\n  cache_service:\n    provides: [get, set, invalidate]\n    depends_on: [database_service]\n\n  user_service:\n    provides: [authenticate, get_profile, update_profile]\n    # FAULT: user_service depends on order_service\n    depends_on: [database_service, cache_service, order_service]\n\n  order_service:\n    provides: [create_order, get_orders, cancel_order]\n    # FAULT: order_service depends on user_service — creates cycle\n    depends_on: [user_service, database_service]\n\n  notification_service:\n    provides: [send_email, send_push]\n    depends_on: [user_service]\n\n  api_gateway:\n    provides: [route, auth_middleware, rate_limit]\n    depends_on: [user_service, order_service, notification_service]\n\ndependency_checks:\n  max_depth: 4\n  cycles_allowed: false\n  validation: strict\n",
+      "context": "Microservice dependency architecture. Stage: design. Scenario: S2. Circular dependency fault injected.",
+      "fault_present": true,
+      "ground_truth": {
+        "v2_architectural_alignment_approx": 0.2,
+        "fault_present": true,
+        "fault_description": "user_service ↔ order_service mutual dependency (circular)",
+        "expected_llm_detection": "Circular: user_service→order_service→user_service"
+      }
+    },
+    {
+      "artifact_id": "s3_processor_k0",
+      "scenario": "S3",
+      "cycle": 0,
+      "artifact_type": "python_code",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef process_order(order: dict) -> dict:\n    logger.info(\"Processing order %s\", order.get(\"id\"))\n    if not order.get(\"items\"):\n        logger.warning(\"Order %s has no items\", order.get(\"id\"))\n        return {\"status\": \"error\", \"reason\": \"no_items\"}\n    total = sum(item[\"price\"] * item[\"qty\"] for item in order[\"items\"])\n    logger.info(\"Order %s total: %.2f\", order.get(\"id\"), total)\n    return {\"order_id\": order[\"id\"], \"total\": total, \"status\": \"processed\"}\n",
+      "context": "Order processor module. Stage: build. Scenario: S3. Cycle 0/3. Expected MI≈68, CC≈2.",
+      "fault_present": null,
+      "ground_truth": {
+        "v8_approx": 0.68,
+        "mi_approx": 68,
+        "cc_approx": 2
+      }
+    },
+    {
+      "artifact_id": "s3_processor_k1",
+      "scenario": "S3",
+      "cycle": 1,
+      "artifact_type": "python_code",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef process_order(order: dict) -> dict:\n    logger.info(\"Processing order %s\", order.get(\"id\"))\n    if not order:\n        return {\"status\": \"error\", \"reason\": \"empty_order\"}\n    if not order.get(\"items\"):\n        logger.warning(\"Order %s has no items\", order.get(\"id\"))\n        return {\"status\": \"error\", \"reason\": \"no_items\"}\n    if not order.get(\"customer_id\"):\n        return {\"status\": \"error\", \"reason\": \"missing_customer\"}\n    total = 0.0\n    for item in order[\"items\"]:\n        price = item[\"price\"]\n        qty = item[\"qty\"]\n        if item.get(\"discount\"):\n            price = price * (1 - item[\"discount\"])\n        if item.get(\"tax\"):\n            price = price * (1 + item[\"tax\"])\n        total += price * qty\n    status = \"processed\"\n    if total > 1000:\n        status = \"requires_review\"\n    logger.info(\"Order %s total: %.2f status: %s\", order[\"id\"], total, status)\n    return {\"order_id\": order[\"id\"], \"total\": total, \"status\": status}\n",
+      "context": "Order processor module. Stage: build. Scenario: S3. Cycle 1/3. Expected MI≈60, CC≈5.",
+      "fault_present": null,
+      "ground_truth": {
+        "v8_approx": 0.6,
+        "mi_approx": 60,
+        "cc_approx": 5
+      }
+    },
+    {
+      "artifact_id": "s3_processor_k2",
+      "scenario": "S3",
+      "cycle": 2,
+      "artifact_type": "python_code",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef process_order(order: dict) -> dict:\n    logger.info(\"Processing order %s\", order.get(\"id\"))\n    if not order:\n        return {\"status\": \"error\", \"reason\": \"empty_order\"}\n    if not order.get(\"items\"):\n        return {\"status\": \"error\", \"reason\": \"no_items\"}\n    if not order.get(\"customer_id\"):\n        return {\"status\": \"error\", \"reason\": \"missing_customer\"}\n    total = 0.0\n    discount_total = 0.0\n    tax_total = 0.0\n    for item in order[\"items\"]:\n        p = item[\"price\"]\n        q = item[\"qty\"]\n        if item.get(\"discount\"):\n            d = item[\"discount\"]\n            if d > 0.5:\n                d = 0.5\n            p2 = p * (1 - d)\n            discount_total += (p - p2) * q\n            p = p2\n        if item.get(\"tax\"):\n            t = item[\"tax\"]\n            if t < 0:\n                t = 0\n            p3 = p * (1 + t)\n            tax_total += (p3 - p) * q\n            p = p3\n        if item.get(\"bundle_discount\") and q >= 3:\n            p = p * 0.9\n        total += p * q\n    st = \"processed\"\n    if total > 1000:\n        st = \"requires_review\"\n    if total > 5000:\n        st = \"manager_approval\"\n    if order.get(\"priority\") == \"express\":\n        if total < 50:\n            st = \"error_min_express\"\n    return {\n        \"order_id\": order[\"id\"],\n        \"total\": total,\n        \"discount_total\": discount_total,\n        \"tax_total\": tax_total,\n        \"status\": st,\n    }\n",
+      "context": "Order processor module. Stage: build. Scenario: S3. Cycle 2/3. Expected MI≈52, CC≈8.",
+      "fault_present": null,
+      "ground_truth": {
+        "v8_approx": 0.52,
+        "mi_approx": 52,
+        "cc_approx": 8
+      }
+    },
+    {
+      "artifact_id": "s3_processor_k3",
+      "scenario": "S3",
+      "cycle": 3,
+      "artifact_type": "python_code",
+      "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef process_order(order: dict) -> dict:\n    if not order:\n        return {\"status\": \"error\", \"reason\": \"empty_order\"}\n    if not order.get(\"items\"):\n        return {\"status\": \"error\", \"reason\": \"no_items\"}\n    if not order.get(\"customer_id\"):\n        return {\"status\": \"error\", \"reason\": \"missing_customer\"}\n    if not order.get(\"id\"):\n        return {\"status\": \"error\", \"reason\": \"missing_id\"}\n    t = 0.0\n    dt = 0.0\n    tt = 0.0\n    fc = 0\n    for item in order[\"items\"]:\n        p = item.get(\"price\", 0)\n        q = item.get(\"qty\", 0)\n        if p < 0:\n            p = 0\n        if q < 0:\n            q = 0\n        if item.get(\"discount\"):\n            dv = item[\"discount\"]\n            if dv > 0.5:\n                dv = 0.5\n            if dv < 0:\n                dv = 0\n            p2 = p * (1 - dv)\n            dt += (p - p2) * q\n            p = p2\n        if item.get(\"tax\"):\n            tv = item[\"tax\"]\n            if tv < 0:\n                tv = 0\n            if tv > 0.3:\n                tv = 0.3\n            p3 = p * (1 + tv)\n            tt += (p3 - p) * q\n            p = p3\n        if item.get(\"bundle_discount\"):\n            if q >= 3:\n                p = p * 0.9\n            elif q >= 5:\n                p = p * 0.85\n            elif q >= 10:\n                p = p * 0.80\n        if item.get(\"member_price\") and order.get(\"is_member\"):\n            mp = item[\"member_price\"]\n            if mp < p:\n                p = mp\n        t += p * q\n        fc += 1\n    s = \"processed\"\n    if t > 1000:\n        s = \"requires_review\"\n    if t > 5000:\n        s = \"manager_approval\"\n    if t > 10000:\n        s = \"finance_approval\"\n    if order.get(\"priority\") == \"express\":\n        if t < 50:\n            s = \"error_min_express\"\n        elif t > 500:\n            s = \"express_surcharge\"\n    if order.get(\"region\") == \"international\":\n        if t < 100:\n            s = \"error_min_international\"\n        t = t * 1.15\n    if fc == 0:\n        s = \"error_no_valid_items\"\n    logger.info(\"order=%s total=%.2f items=%d status=%s\", order[\"id\"], t, fc, s)\n    return {\n        \"order_id\": order[\"id\"],\n        \"total\": t,\n        \"discount_total\": dt,\n        \"tax_total\": tt,\n        \"item_count\": fc,\n        \"status\": s,\n    }\n",
+      "context": "Order processor module. Stage: build. Scenario: S3. Cycle 3/3. Expected MI≈44, CC≈12.",
+      "fault_present": null,
+      "ground_truth": {
+        "v8_approx": 0.44,
+        "mi_approx": 44,
+        "cc_approx": 12
+      }
+    },
+    {
+      "artifact_id": "s4_deploy_clean",
+      "scenario": "S4",
+      "cycle": 0,
+      "artifact_type": "ci_cd_config",
+      "code": "# k8s_deployment.yaml — clean version with full observability\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-service\n  namespace: production\n  labels:\n    app: api-service\n    version: \"2.1.0\"\n  annotations:\n    prometheus.io/scrape: \"true\"\n    prometheus.io/port: \"8080\"\n    prometheus.io/path: \"/metrics\"\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: api-service\n  strategy:\n    type: RollingUpdate\n    rollingUpdate:\n      maxSurge: 1\n      maxUnavailable: 0\n  template:\n    metadata:\n      labels:\n        app: api-service\n        version: \"2.1.0\"\n      annotations:\n        prometheus.io/scrape: \"true\"\n        prometheus.io/port: \"8080\"\n    spec:\n      containers:\n        - name: api-service\n          image: registry.example.com/api-service:2.1.0\n          ports:\n            - containerPort: 8080\n              name: http\n          resources:\n            requests:\n              cpu: \"250m\"\n              memory: \"256Mi\"\n            limits:\n              cpu: \"500m\"\n              memory: \"512Mi\"\n          livenessProbe:\n            httpGet:\n              path: /healthz\n              port: 8080\n            initialDelaySeconds: 15\n            periodSeconds: 20\n            failureThreshold: 3\n          readinessProbe:\n            httpGet:\n              path: /ready\n              port: 8080\n            initialDelaySeconds: 5\n            periodSeconds: 10\n            failureThreshold: 3\n          env:\n            - name: LOG_LEVEL\n              value: \"INFO\"\n            - name: METRICS_ENABLED\n              value: \"true\"\n---\napiVersion: autoscaling/v2\nkind: HorizontalPodAutoscaler\nmetadata:\n  name: api-service-hpa\n  namespace: production\nspec:\n  scaleTargetRef:\n    apiVersion: apps/v1\n    kind: Deployment\n    name: api-service\n  minReplicas: 2\n  maxReplicas: 10\n  metrics:\n    - type: Resource\n      resource:\n        name: cpu\n        target:\n          type: Utilization\n          averageUtilization: 70\n",
+      "context": "Kubernetes deployment manifest. Stage: deploy. Scenario: S4. Full observability and resource controls present.",
+      "fault_present": false,
+      "ground_truth": {
+        "v5_observability_approx": 0.85,
+        "v2_arch_approx": 0.8,
+        "fault_present": false
+      }
+    },
+    {
+      "artifact_id": "s4_deploy_faulty",
+      "scenario": "S4",
+      "cycle": 0,
+      "artifact_type": "ci_cd_config",
+      "code": "# k8s_deployment.yaml — FAULT: no resource limits, no probes, no observability\napiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: api-service\n  namespace: production\n  labels:\n    app: api-service\nspec:\n  replicas: 3\n  selector:\n    matchLabels:\n      app: api-service\n  template:\n    metadata:\n      labels:\n        app: api-service\n    spec:\n      containers:\n        - name: api-service\n          image: registry.example.com/api-service:2.1.0\n          ports:\n            - containerPort: 8080\n          # FAULT: no resources block — pod can consume unlimited CPU/memory\n          # FAULT: no livenessProbe — unhealthy pods are never restarted\n          # FAULT: no readinessProbe — traffic routes to unready pods\n          # FAULT: no Prometheus annotations — metrics not scraped\n          # FAULT: no HPA — no autoscaling under load\n          env:\n            - name: LOG_LEVEL\n              value: \"ERROR\"\n",
+      "context": "Kubernetes deployment manifest. Stage: deploy. Scenario: S4. Missing probes, resource limits, and Prometheus annotations.",
+      "fault_present": true,
+      "ground_truth": {
+        "v5_observability_approx": 0.15,
+        "v2_arch_approx": 0.35,
+        "fault_present": true,
+        "fault_description": "No resource limits/requests; no liveness/readiness probes; no Prometheus annotations; no HPA configuration"
+      }
+    },
+    {
+      "artifact_id": "s5_auth_security_agent",
+      "scenario": "S5",
+      "cycle": 0,
+      "artifact_type": "python_code",
+      "code": "import hashlib\nimport hmac\nimport logging\nimport os\nimport time\nfrom dataclasses import dataclass\nfrom typing import Optional\n\nlogger = logging.getLogger(__name__)\n\n_RATE_LIMIT_STORE: dict[str, list[float]] = {}\n_MAX_ATTEMPTS = 5\n_WINDOW_SECONDS = 300\n_TOKEN_TTL = 3600\n_ISSUED_TOKENS: dict[str, dict] = {}\n\n\n@dataclass\nclass AuthResult:\n    success: bool\n    user_id: Optional[int]\n    token: Optional[str]\n    reason: Optional[str]\n\n\ndef _check_rate_limit(identifier: str) -> bool:\n    now = time.time()\n    attempts = _RATE_LIMIT_STORE.get(identifier, [])\n    attempts = [t for t in attempts if now - t < _WINDOW_SECONDS]\n    if len(attempts) >= _MAX_ATTEMPTS:\n        logger.warning(\"Rate limit exceeded for %s\", identifier)\n        return False\n    attempts.append(now)\n    _RATE_LIMIT_STORE[identifier] = attempts\n    return True\n\n\ndef _generate_token(user_id: int) -> str:\n    raw = f\"{user_id}:{time.time()}:{os.urandom(16).hex()}\"\n    return hmac.new(\n        os.environ.get(\"SECRET_KEY\", \"default\").encode(),\n        raw.encode(),\n        hashlib.sha256,\n    ).hexdigest()\n\n\ndef _hash_password(password: str, salt: str) -> str:\n    return hashlib.pbkdf2_hmac(\"sha256\", password.encode(), salt.encode(), 100000).hex()\n\n\ndef _validate_token(token: str) -> Optional[dict]:\n    entry = _ISSUED_TOKENS.get(token)\n    if not entry:\n        return None\n    if time.time() - entry[\"issued_at\"] > _TOKEN_TTL:\n        del _ISSUED_TOKENS[token]\n        logger.info(\"Token expired for user %s\", entry[\"user_id\"])\n        return None\n    return entry\n\n\ndef authenticate_user(db, username: str, password: str, client_ip: str) -> AuthResult:\n    logger.info(\"Auth attempt: user=%s ip=%s\", username, client_ip)\n    if not _check_rate_limit(client_ip):\n        return AuthResult(False, None, None, \"rate_limited\")\n    if not _check_rate_limit(username):\n        return AuthResult(False, None, None, \"rate_limited_user\")\n    if len(username) > 64 or not username.replace(\"_\", \"\").replace(\"-\", \"\").isalnum():\n        logger.warning(\"Invalid username format: %s\", username)\n        return AuthResult(False, None, None, \"invalid_username\")\n    from sqlalchemy import text\n    row = db.execute(\n        text(\"SELECT id, password_hash, salt, locked FROM users WHERE username = :u\"),\n        {\"u\": username},\n    ).fetchone()\n    if not row:\n        time.sleep(0.1)\n        logger.warning(\"User not found: %s\", username)\n        return AuthResult(False, None, None, \"invalid_credentials\")\n    if row.locked:\n        return AuthResult(False, None, None, \"account_locked\")\n    expected = _hash_password(password, row.salt)\n    if not hmac.compare_digest(row.password_hash, expected):\n        logger.warning(\"Bad password for user: %s\", username)\n        return AuthResult(False, None, None, \"invalid_credentials\")\n    token = _generate_token(row.id)\n    _ISSUED_TOKENS[token] = {\"user_id\": row.id, \"issued_at\": time.time()}\n    logger.info(\"Auth success: user_id=%s\", row.id)\n    return AuthResult(True, row.id, token, None)\n",
+      "context": "User authentication module. Stage: build. Scenario: S5. Security-first implementation: JWT, rate limiting, pbkdf2 hashing. Expected: high security, low testability.",
+      "fault_present": null,
+      "ground_truth": {
+        "v4_security_approx": 0.85,
+        "v6_testability_approx": 0.25,
+        "agent": "security_agent",
+        "profile": "hardened: JWT validation, rate limiting, bcrypt — complex, hard to test"
+      }
+    },
+    {
+      "artifact_id": "s5_auth_code_agent",
+      "scenario": "S5",
+      "cycle": 0,
+      "artifact_type": "python_code",
+      "code": "import hashlib\nimport logging\nfrom sqlalchemy import text\nfrom sqlalchemy.orm import Session\n\nlogger = logging.getLogger(__name__)\n\n\ndef authenticate_user(db: Session, username: str, password: str) -> dict | None:\n    # B608: SQL injection — f-string in WHERE clause\n    query = \"SELECT id, password_hash FROM users WHERE username='\" + username + \"'\"\n    row = db.execute(text(query)).fetchone()\n    if not row:\n        return None\n    # B324: MD5 — weak hash\n    pw_hash = hashlib.md5(password.encode()).hexdigest()\n    if row.password_hash != pw_hash:\n        return None\n    return {\"id\": row.id}\n\n\ndef get_user_by_id(db: Session, user_id: int) -> dict | None:\n    query = \"SELECT id, username FROM users WHERE id=\" + str(user_id)\n    row = db.execute(text(query)).fetchone()\n    return {\"id\": row.id, \"username\": row.username} if row else None\n\n\ndef logout(db: Session, user_id: int) -> bool:\n    db.execute(\n        text(\"UPDATE sessions SET active=0 WHERE user_id = :uid\"),\n        {\"uid\": user_id},\n    )\n    return True\n",
+      "context": "User authentication module. Stage: build. Scenario: S5. Clean-code implementation: minimal, testable. Expected: high testability, low security (SQL injection present).",
+      "fault_present": null,
+      "ground_truth": {
+        "v4_security_approx": 0.2,
+        "v6_testability_approx": 0.75,
+        "agent": "code_agent",
+        "profile": "clean: simple token lookup — highly testable but SQL injection present"
+      }
+    }
+  ]
+}
