@@ -108,13 +108,13 @@ where:  d  ∈ {1...11}   quality dimension
         k  ∈ T_idx       time index (cycle)
 ```
 
-**Why a tensor, not a table?** The shared index structure `[d, i, j, k]` enables operations that relational tables cannot express without complex self-joins:
+**Why a tensor, not a table?** The shared index structure `[d, i, j, k]` makes multidimensional supervisory operations first-class — relational tables can store the same data, but require complex self-joins to express them naturally:
 
 - `T[d, i, j1, k] − T[d, i, j2, k]` → detects inter-agent conflict across all 11 dimensions simultaneously → this is **Ρ**
 - `T[d, :, :, :]` → complete trajectory of a quality dimension across stages, agents, and time → enables **Δ**
-- The time index `k` makes S3 (accumulative technical debt) structurally detectable — it is undetectable without temporal correlation across cycles
+- The time index `k` makes S3 (accumulative technical debt) naturally surfaced — it is not reliably detectable without temporal correlation across cycles
 
-S3 and S5 are not just experiment scenarios: they are the empirical proof that the tensor is a mathematical necessity, not a convenient metaphor.
+S3 and S5 are not just experiment scenarios: they are the empirical proof that the tensor makes these supervisory operations operationally first-class — not merely a convenient metaphor. Monte Carlo simulation (n=1000) confirms: S3 artifact-level detection rate 32.3% vs tensor Δ detection rate 66.9% (+34.6pp gap); S5 tensor Ρ identifies 2 conflicting dimensions (Δ=0.65, Δ=0.50) that per-artifact review requires concurrent working memory to detect. (`analysis/tensor_necessity.py`)
 
 ### The Inference Layer  I: T → {Ω, Δ, Ρ, Ξ}
 
@@ -177,11 +177,11 @@ TCO maintains the orchestrator at the NCF by:
 |----------|-----------|--------------------|--------------------|
 | S1 — Auth | SQL injection in auth module | v₄ −0.61, v₁₁ −0.59 | Raw: code reading · TCO: radar + Ρ |
 | S2 — Arch | Circular dependency (hexagonal violation) | v₂ −0.41, v₇ −0.26 | Raw: expert knowledge · TCO: tensor slice |
-| S3 — Debt | 3-cycle accumulating cyclomatic complexity | v₈ −0.08/cycle | Raw: **undetectable** · TCO: Δ trend |
+| S3 — Debt | 3-cycle accumulating cyclomatic complexity | v₈ −0.08/cycle | Raw: **not reliably detectable** · TCO: Δ trend |
 | S4 — Deploy | K8s config disabling Prometheus metrics | v₅ −0.56, v₉ −0.26 | Raw: full YAML review · TCO: Ξ alert |
-| S5 — Conflict | Code agent (stateless) vs. Arch agent (stateful) | ΔΡ +0.41 | Raw: **undetectable in isolation** · TCO: Ρ only |
+| S5 — Conflict | Code agent (stateless) vs. Arch agent (stateful) | ΔΡ +0.41 | Raw: **not reliably detectable in isolation** · TCO: Ρ only |
 
-> **S3 and S5 are structurally undetectable through individual artifact review.** S3 requires cross-temporal correlation across cycles; S5 requires simultaneous cross-agent comparison. Both are naturally surfaced by joint indexing over `T[d,i,j,k]`. This asymmetry is the direct empirical argument for tensor necessity and the primary test of TCO's unique detection capability.
+> **S3 and S5 are not reliably detectable through individual artifact review.** S3 requires cross-temporal correlation across cycles; S5 requires simultaneous cross-agent comparison. Both are naturally surfaced by joint indexing over `T[d,i,j,k]`. This asymmetry is the direct empirical argument for tensor operational first-classness and the primary test of TCO's unique detection capability.
 
 ### Statistical Analysis Plan
 

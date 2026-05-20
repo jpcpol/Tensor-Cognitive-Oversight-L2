@@ -9,6 +9,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 
 | ID | Descripción breve | Categoría | Estado |
 | -- | ----------------- | --------- | ------ |
+| DT-000 | Pipeline graph.py + fault_injector.py (S1-S5) + corpus.json | Crítica | Implementado |
 | DT-001 | Instalar entornos de dependencias | Crítica | Implementado |
 | DT-002 | Implementar `vectorizer.py` | Crítica | Implementado |
 | DT-003 | Implementar prompt del QA Agent | Crítica | Implementado |
@@ -31,7 +32,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-020 | Paper — Reencuadrar con narrativa expertise shift | Recomendado | Implementado |
 | DT-021 | Suite de calibración φ (Spearman ρ) | Crítica | Implementado |
 | DT-022 | Rubrica PIQ a nivel struct para H5 | Importante | Pendiente |
-| DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Pendiente |
+| DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Implementado |
 | DT-024 | Paper — Evaluator variance y rigor LLM-QA | Importante | Pendiente |
 | DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Pendiente |
 | DT-026 | Experimento — 4 proxies NCF operacionalizados en infra | Importante | Pendiente |
@@ -39,6 +40,53 @@ que deberá abordarse antes de la submission final o el experimento completo.
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
+
+---
+
+## PIPELINE — Ruta crítica desbloqueada (2026-05-20)
+
+### DT-000 · Pipeline graph.py + fault_injector.py + escenarios S1-S5 + corpus.json
+
+**Componente:** `src/pipeline/` (completo)  
+**Estado:** Implementado — pipeline LangGraph funcional, 5 escenarios con artefactos reales, corpus.json generado (12 entradas).
+
+**Lo que se construyó:**
+
+1. **`state.py`** — `PipelineState` TypedDict + `ArtifactDict`. Estado compartido entre los 6 nodos LangGraph.
+
+2. **`graph.py`** — LangGraph `StateGraph` completo:
+   - Nodos: `load_artifacts → qa_evaluate → vectorize → aggregate → infer → next_cycle`
+   - Edge condicional: si `cycle_k < n_cycles - 1` → loop; else `END`
+   - Integra: QAAgent, Vectorizer (φ), TensorAggregator, InferenceEngine
+   - Modo dry-run si tco_engine no está disponible (graceful degradation)
+   - Función de alto nivel: `run_scenario(scenario_id, session_id, n_cycles) → final_state`
+
+3. **`fault_injector.py`** — `FaultInjector` con 5 handlers + `FAULT_SPECS` predefinidos:
+   - `sql_injection` — reemplaza queries parametrizadas por concatenación de strings
+   - `circular_import` — inyecta dependencia circular en YAML o Python
+   - `missing_resource` — elimina resource limits de K8s YAML
+   - `debt_increment` — añade patrones de deuda conocida (CC extra)
+   - `agent_security_bias` — fuerza un score bajo de seguridad para test de conflicto
+
+4. **Escenarios S1-S5** — cada módulo provee `get_artifacts(cycle_k)`, `GROUND_TRUTH`, `N_CYCLES`:
+   - `s1_auth.py`: SQL injection (2 artifacts, v4: 0.90→0.20, bandit B608+B324)
+   - `s2_arch.py`: Circular dependency YAML (2 artifacts, v2: 0.85→0.20)
+   - `s3_debt.py`: Gradual debt — 4 ciclos (v8: 0.68→0.60→0.52→0.44, CC: 2→5→8→12)
+   - `s4_deploy.py`: K8s sin observabilidad (2 artifacts, v5: 0.85→0.15)
+   - `s5_conflict.py`: Inter-agent conflict (v4Δ≈0.65, v6Δ≈0.50 entre security_agent y code_agent)
+
+5. **`scenario_preloader.py`** — CLI corpus generator:
+   - `python scenario_preloader.py` → genera `phi_calibration/corpus/corpus.json`
+   - `--dry-run` → muestra summary sin escribir archivo
+   - Output: 12 artefactos (S1:2, S2:2, S3:4, S4:2, S5:2); 8 python_code elegibles para Spearman ρ
+
+6. **`corpus.json`** generado en `src/experiment/phi_calibration/corpus/corpus.json`:
+   - 12 entries con: artifact_id, scenario, cycle, artifact_type, code, context, fault_present, ground_truth
+   - Listo para consumir con `phi_calibration.py --corpus corpus.json`
+
+**Desbloquea:** DT-021 (phi_calibration — requiere ANTHROPIC_API_KEY para scores LLM).
+
+**Ruta crítica previa:** sin este módulo, no había artefactos sintéticos → no había corpus → no había calibración φ → no se podía hacer el piloto (Semana 5).
 
 ---
 
@@ -362,17 +410,32 @@ Cambios necesarios:
 
 ### DT-023 · Script "tensor necessity proof" en analysis/
 
-**Componente:** `analysis/tensor_necessity.py` (nuevo)  
-**Estado:** Pendiente  
-**Descripción:** Script de análisis que demuestra empíricamente que S3 y S5 son indetectables con evaluación individual de artefactos, y detectables con slicing tensorial.
+**Componente:** `analysis/tensor_necessity.py`  
+**Estado:** Implementado — 2026-05-20  
+**Descripción:** Script de análisis que demuestra empíricamente que S3 y S5 son no detectables con confianza mediante evaluación individual de artefactos, y son detectables mediante slicing tensorial.
 
-Metodología:
-1. Simular los datos del escenario S3 (v₈ degrada −0.08 por ciclo durante 3 ciclos) y S5 (conflicto inter-agente ΔΡ = 0.41)
-2. Ejecutar "revisión individual" simulada: evaluar cada artefacto por separado, sin contexto temporal ni inter-agente → mostrar que el cambio de −0.08/ciclo es invisible dentro del ruido de evaluación individual
-3. Ejecutar detección tensorial: aplicar `Δ[d,i,j,k]` y `|T[d,i,j₁,k] − T[d,i,j₂,k]|` → mostrar que el acumulado de 3 ciclos (−0.24 total) supera el threshold de alerta
-4. Output: figura lado-a-lado "artifact-level view" vs "tensor view" para S3 y S5
+**Resultados obtenidos (Monte Carlo n=1000, seed=42):**
 
-Este análisis es la evidencia empírica directa contra "tensor washing". Incluir en el paper como Figure 2 (Section 5.3).
+| Escenario | Detección artifact-level | Detección tensorial | Gap |
+|-----------|--------------------------|---------------------|-----|
+| S3 (deuda gradual) | 32.3% | 66.9% | +34.6pp |
+| S5 (conflicto inter-agente) | Requiere memoria concurrente | 2/2 conflictos detectados (v4Δ=0.65, v6Δ=0.50) | — |
+
+**Parámetros S3:**
+
+- Trayectoria v₈: [0.68, 0.60, 0.52, 0.44] — delta/ciclo = 0.08
+- Ruido evaluador: σ = 0.07 → SNR por ciclo = 1.14 (bajo el umbral de detección fiable)
+- Delta acumulado 3 ciclos: 0.24 → SNR acumulado = 3.43 (sobre el umbral)
+- Threshold artifact-level (NOTICEABLE_SINGLE_CYCLE): 0.20
+- Threshold tensor (cumulative): 0.20
+
+**Conclusión:** El tensor hace operationally first-class lo que SQL requeriría un self-join de coordenadas reconstruidas. Script sale con exit code 0 ("CONFIRMED").
+
+**Output generado:**
+
+- `analysis/figures/tensor_necessity_combined.png` — figura 4 paneles para el paper (Figure 2, Section 5.3)
+
+**Implementación:** `analysis/tensor_necessity.py` (393 líneas). Uso: `python analysis/tensor_necessity.py` o `--no-plots`.
 
 ---
 

@@ -335,7 +335,7 @@ f₃ — CP decomposition (for advanced pattern analysis):
 
 A likely critical objection is that `T[d,i,j,k]` could be equivalently stored in a relational table with columns `(dimension, stage, agent, cycle, value)`. The objection is technically correct for *storage* but incorrect for *inference*.
 
-The case rests on two scenarios that are structurally undetectable without joint 4D indexing:
+The case rests on two scenarios that are not reliably detectable without joint 4D indexing:
 
 **S3 — Accumulative technical debt** requires the operation:
 
@@ -353,7 +353,9 @@ This retrieves the v₈ slice across all stages and agents for two time indices 
 
 This computes the element-wise difference between two agent slices across all 11 quality dimensions simultaneously, at the same stage and cycle. The equivalent SQL is a self-join on `(stage, cycle)` with a `CASE` expression for each of the 11 dimensions. Beyond the query complexity, the structural problem is deeper: per-artifact review systems process outputs of agent j₁ and agent j₂ in separate review sessions, without any mechanism for cross-referencing their quality profiles at the same pipeline coordinate. The conflict in S5 — a code agent generating stateless services while the architecture agent enforces stateful session constraints — is invisible to any reviewer who does not have both agents' outputs in scope simultaneously, indexed by the same `[stage, cycle]` coordinate.
 
-The tensor's contribution is therefore not storage efficiency but **inference first-classness**: the shared index structure `[d,i,j,k]` is what allows the inference engine to express Δ and Ρ as direct tensor operations rather than as application-level logic that must reconstruct the coordinate system from relational data. S3 and S5 are the empirical proof that this first-classness is a mathematical necessity for the detection objectives of TCO, not a representational convenience.
+The tensor's contribution is therefore not storage efficiency but **inference first-classness**: the shared index structure `[d,i,j,k]` is what allows the inference engine to express Δ and Ρ as direct tensor operations rather than as application-level logic that must reconstruct the coordinate system from relational data. S3 and S5 are the empirical proof that this first-classness is operationally necessary for the detection objectives of TCO — not a representational convenience.
+
+**Empirical validation (Monte Carlo, n=1000).** A simulation of the S3 detection problem (trajectory [0.68, 0.60, 0.52, 0.44], evaluator noise σ=0.07, SNR per cycle=1.14) yielded: artifact-level detection rate 32.3% (single-cycle threshold 0.20); tensor Δ detection rate 66.9% (cumulative 3-cycle threshold 0.20). The detection gap of +34.6 percentage points confirms that individual artifact review is unreliable at this noise level. For S5, tensor Ρ detected 2 conflicting dimensions (security_risk: Δ=0.65, testability: Δ=0.50, both exceeding threshold 0.30); per-artifact review requires the reviewer to hold both agent outputs in working memory simultaneously to perform the equivalent comparison. Analysis script: `analysis/tensor_necessity.py`; figure: `analysis/figures/tensor_necessity_combined.png`.
 
 ### 5.4 Layer 5 — The Inference Model
 
@@ -534,11 +536,11 @@ The fault injection methodology follows established software engineering researc
 |----------|-----------|-----------------|----------|-----------------|----------------|
 | **S1 — Auth** | SQL injection in auth module | v₄ security_risk, v₁₁ anomaly | HIGH | v₄: 0.82→0.21, v₁₁: 0.90→0.31 | Raw: code reading · TCO: red radar + Ρ alert |
 | **S2 — Arch** | Circular dependency violating hexagonal architecture | v₂ arch_alignment, v₇ maintainability | MEDIUM | v₂: 0.79→0.38, v₇: 0.71→0.45 | Raw: expert knowledge required · TCO: tensor slice T[:,i,:,:] |
-| **S3 — Debt** | Three cycles of accumulating cyclomatic complexity | v₈ technical_debt, v₃ scalability | LOW (progressive) | v₈: 0.68→0.44 (Δ = −0.08/cycle) | Raw: undetectable · TCO: Δ trend view (H4 test) |
+| **S3 — Debt** | Three cycles of accumulating cyclomatic complexity | v₈ technical_debt, v₃ scalability | LOW (progressive) | v₈: 0.68→0.44 (Δ = −0.08/cycle) | Raw: not reliably detectable · TCO: Δ trend view (H4 test) |
 | **S4 — Deploy** | Kubernetes config disabling Prometheus metric export | v₅ observability, v₉ performance | MEDIUM | v₅: 0.85→0.29, v₉: 0.77→0.51 | Raw: full YAML review · TCO: Ξ alert + recommendation |
-| **S5 — Conflict** | Code agent (stateless auth) vs. Arch agent (stateful sessions) | v₂ inter-agent diff = 0.41 | HIGH | Ρ conflict active, Ω = warning | Raw: undetectable in isolation · TCO only (exclusive H4 test) |
+| **S5 — Conflict** | Code agent (stateless auth) vs. Arch agent (stateful sessions) | v₂ inter-agent diff = 0.41 | HIGH | Ρ conflict active, Ω = warning | Raw: not reliably detectable in isolation · TCO only (exclusive H4 test) |
 
-> **Note on S3 and S5:** These scenarios are structurally undetectable through individual artifact review. S3 requires cross-temporal correlation of three independent commits; S5 requires simultaneous comparison of two agent outputs on the same module. Both are naturally surfaced by the TCO tensor. This asymmetry is the most direct test of the framework's unique detection capabilities.
+> **Note on S3 and S5:** These scenarios are not reliably detectable through individual artifact review. S3 requires cross-temporal correlation of three independent commits; S5 requires simultaneous comparison of two agent outputs on the same module. Both are naturally surfaced by the TCO tensor. This asymmetry is the most direct test of the framework's unique detection capabilities.
 
 **S3 Session Pre-loading Protocol:** S3 requires three prior cycles of accumulated complexity degradation to be visible as a trend (Δ < 0 over three consecutive k values). The pipeline pre-runs S3 with the fault injected automatically before each participant session begins. The three pre-loaded cycles are executed by the real agent pipeline and stored in the database with timestamps set to t−90min, t−60min, and t−30min relative to session start, ensuring the Δ trend is visible in the temporal heatmap from session opening. Pre-loaded data are verified against ground truth delta (v₈: 0.68→0.44, Δ = −0.08/cycle) before each session via automated integrity check. This pre-loading procedure is applied identically to both groups; the control group sees the raw code artifacts from each pre-loaded cycle in their multi-tab viewer.
 
