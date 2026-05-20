@@ -16,7 +16,9 @@
 >
 > The paper includes a full experimental design with five controlled scenarios, a functional MVP specification, and a 10-week software implementation roadmap validated against five research hypotheses (H1–H5).
 >
-> **Keywords:** *cognitive oversight, tensor representation, multi-agent systems, human orchestration, Natural Cognitive Frontier, policy injection, software quality, AI supervision, controlled experiment, MVP*
+> A secondary but equally important contribution is a reframing of the human role in AI-supervised software systems. TCO does not argue that technical expertise becomes less valuable — it argues that expertise **shifts** from artifact manipulation to systemic orchestration. As AI system autonomy increases, the capacity for systemic supervision becomes more critical, not less: the engineer who once debugged lines of code must now debug emergent behaviors. The NCF is the design boundary that makes this shift tractable.
+>
+> **Keywords:** *cognitive oversight, tensor representation, multi-agent systems, human orchestration, Natural Cognitive Frontier, policy injection, software quality, AI supervision, controlled experiment, expertise shift, orchestration engineer*
 
 ---
 
@@ -47,7 +49,9 @@ This bottleneck manifests as what practitioners describe as *"brain fry"* — a 
 
 Traditional Human-in-the-Loop (HITL) models assume that human supervisors review discrete, bounded outputs and intervene at well-defined checkpoints. This assumption was reasonable when automated systems produced individual, interpretable decisions. In multi-agent AI-driven software development, it fails structurally: the volume of outputs is continuous, the complexity of each artifact is high, and the consequences of any single error propagate across interdependent system components.
 
-This paper argues that the limitation is not human capability per se, but the **level of abstraction** at which humans interact with AI systems. The solution is not better tools for reviewing raw outputs — it is a fundamentally different model of interaction, one in which humans **orchestrate system states** rather than validate individual artifacts.
+This paper argues that the limitation is not human capability per se, but the **level of abstraction** at which humans interact with AI systems — and more fundamentally, a mismatch between that abstraction level and the **new role** that AI autonomy is creating for human engineers. The solution is not better tools for reviewing raw outputs. It is a recognition that the engineer's role has already shifted — from artifact author and validator to systemic orchestrator — and that current interfaces have not kept pace with that shift.
+
+As AI systems take over the generation of code, configurations, and architectural decisions, the human's comparative advantage is no longer in producing those artifacts. It is in **supervising the behaviors and quality trajectories of the systems that produce them** — detecting drift, resolving inter-agent conflicts, enforcing architectural policy. This requires operating at a higher abstraction level: one where cognitive effort is directed at judgment about system direction rather than validation of technical detail. TCO is a framework for engineering that abstraction level deliberately.
 
 We propose Tensor-based Cognitive Oversight (TCO), a framework that:
 
@@ -184,6 +188,12 @@ TCO proposes that humans should instead operate as:
 - **Strategic decision-makers**: interpreting aggregated state and formulating high-level responses
 - **Policy designers**: expressing system constraints and priorities in **natural language**
 
+The analogy from Site Reliability Engineering is direct. When production systems scaled beyond the capacity of operators to monitor individual servers, the field did not respond by hiring more operators — it invented observability platforms (Datadog, New Relic, Prometheus) that allowed one engineer to supervise aggregate system health across thousands of services. Engineers stopped debugging individual packets and started supervising state. The expertise did not disappear — it shifted to a higher abstraction level: from network configuration to reliability policy.
+
+The same shift is underway in AI-driven software engineering. Engineers are increasingly unable to review the volume of AI-generated artifacts at artifact-level granularity. The correct response is not to slow down generation — it is to elevate the abstraction level of supervision. The difference between observability platforms and TCO is the nature of the signal: Datadog monitors *operational health* (latency, error rates, resource utilization), while TCO monitors *semantic health* (architectural alignment, security exposure, technical debt trajectory, inter-agent coherence). The human-facing output in both cases is state — not raw data — because state is what enables judgment.
+
+This framing clarifies TCO's unique claim: it is not a cognitive load reduction tool but an **expertise relocation tool** — a system that moves the human's cognitive engagement from the level where AI already performs well (artifact production and review) to the level where human judgment remains irreplaceable (systemic direction, policy design, emergent behavior diagnosis).
+
 ### 4.3 The Automation Bias Risk and Its TCO Resolution
 
 A critical secondary problem in AI supervision is automation bias: the tendency to over-rely on automated recommendations, accepting system outputs without sufficient scrutiny [10]. Standard dashboard-based oversight risks amplifying this bias by converting complex system state into simplified signals that invite passive acceptance.
@@ -318,6 +328,30 @@ f₃ — CP decomposition (for advanced pattern analysis):
 | `T[:, :, j, :]` | What is the quality trajectory of agent j across all stages? |
 | `T[d, :, :, :]` | How does dimension d (e.g., security_risk) behave across the entire system? |
 | `T[:, :, j₁, k] vs T[:, :, j₂, k]` | Are two agents producing conflicting quality profiles for the same stage? |
+
+#### 4.3.4 Tensor Necessity: Why Not a Relational Table?
+
+A likely critical objection is that `T[d,i,j,k]` could be equivalently stored in a relational table with columns `(dimension, stage, agent, cycle, value)`. The objection is technically correct for *storage* but incorrect for *inference*.
+
+The case rests on two scenarios that are structurally undetectable without joint 4D indexing:
+
+**S3 — Accumulative technical debt** requires the operation:
+
+```
+Δ_debt = T[d₈, :, :, k] − T[d₈, :, :, k−3]
+```
+
+This retrieves the v₈ slice across all stages and agents for two time indices simultaneously and computes their element-wise difference. In a relational table, the equivalent is a self-join on `(dimension='technical_debt') WHERE cycle IN (k, k-3)`, followed by grouping by `(stage, agent)`. The S3 scenario involves a degradation of −0.08 per cycle — invisible in any single-cycle snapshot, below the noise floor of per-artifact review. Only the temporal accumulation over 3 cycles (−0.24 total) crosses the alert threshold. A monitoring system that processes artifacts individually — even one that stores results in a table — cannot surface this pattern without explicitly constructing the temporal join. The tensor makes this operation first-class: the k axis is always present, always comparable, and the delta is always computable.
+
+**S5 — Inter-agent conflict** requires the operation:
+
+```
+Ρ = max_{d} | T[d, i, j₁, k] − T[d, i, j₂, k] | > 0.30
+```
+
+This computes the element-wise difference between two agent slices across all 11 quality dimensions simultaneously, at the same stage and cycle. The equivalent SQL is a self-join on `(stage, cycle)` with a `CASE` expression for each of the 11 dimensions. Beyond the query complexity, the structural problem is deeper: per-artifact review systems process outputs of agent j₁ and agent j₂ in separate review sessions, without any mechanism for cross-referencing their quality profiles at the same pipeline coordinate. The conflict in S5 — a code agent generating stateless services while the architecture agent enforces stateful session constraints — is invisible to any reviewer who does not have both agents' outputs in scope simultaneously, indexed by the same `[stage, cycle]` coordinate.
+
+The tensor's contribution is therefore not storage efficiency but **inference first-classness**: the shared index structure `[d,i,j,k]` is what allows the inference engine to express Δ and Ρ as direct tensor operations rather than as application-level logic that must reconstruct the coordinate system from relational data. S3 and S5 are the empirical proof that this first-classness is a mathematical necessity for the detection objectives of TCO, not a representational convenience.
 
 ### 5.4 Layer 5 — The Inference Model
 
@@ -536,6 +570,37 @@ The PIQ evaluation uses a triangulated approach validated by the LLM-as-a-judge 
 | **Experience confound** | Internal | ANCOVA controlling for years of experience + pre-test score. Stratified randomization at assignment |
 | **QA evaluation circularity** | Construct | The vector φ produced by the QA LLM agent is the basis of both the experimental instrument (dashboard) and the dependent variable (vector Δ). Agent inconsistency contaminates both simultaneously. Mitigation: pre-experiment validation of QA agent output against static analysis ground truth across all 5 scenarios (Week 3). Required threshold: Spearman ρ ≥ 0.75 between QA-LLM and static metrics for dimensions v₄, v₆, v₇, v₈. If ρ < 0.75 for any dimension, QA agent prompt is revised before proceeding. Validation report archived as Open Science artifact. |
 | **Task order fatigue asymmetry** | Internal | Fixed T1→T4 ordering means control group participants arrive at T4 with higher cumulative cognitive load from raw output review in T1/T2, biasing H5 in favor of TCO. Mitigation: (a) time-boxing prevents runaway time on early tasks; (b) Raw-TLX is administered post-T2 and post-T4 independently to quantify intra-session fatigue trajectory; (c) T4 results are analyzed controlling for T1+T2 combined completion time as a fatigue proxy covariate in ANCOVA. |
+
+#### 7.6.1 φ Calibration Protocol — Formal No-Go Gate
+
+The QA evaluation circularity threat (see table above) is the single highest-risk validity issue in the TCO experimental design, because a low-quality vectorizer φ simultaneously degrades the experimental instrument (the dashboard) and the dependent variable (vector Δ). To ensure this risk is managed with quantitative rigor, φ validation is formalized here as a **pre-pilot no-go gate** that must be passed before Week 5 (pilot) begins.
+
+**Calibration corpus:** 20–30 synthetic artifacts with known ground-truth quality values, constructed to cover all five experimental scenarios (S1–S5) with their documented ground-truth vectors:
+
+| Scenario | Ground Truth Vectors |
+|----------|--------------------|
+| S1 — SQL injection | v₄ = 0.15 (high risk), v₁₁ = 0.20 (anomaly) |
+| S2 — Circular dependency | v₂ = 0.30 (arch violation), v₇ = 0.45 (maintainability) |
+| S3 — 3-cycle debt | v₈ ∈ {0.68, 0.60, 0.52} per cycle (−0.08/cycle) |
+| S4 — Missing Prometheus | v₅ = 0.20 (observability gap), v₉ = 0.50 |
+| S5 — Stateless vs. stateful conflict | v₂_agent₁ − v₂_agent₂ ≥ 0.41 |
+
+Additional clean artifacts (no injected faults, expected scores ≥ 0.80 for v₁, v₂, v₆, v₇) are included to prevent the calibration from being biased toward failure cases.
+
+**Validation procedure:** For each artifact in the corpus, run both φ's static analysis pipeline (radon + bandit) and the LLM-QA evaluator independently. Compute Spearman ρ between the two sources for each of the four comparable dimensions:
+
+| Dimension | LLM Field | Static Source | No-Go Threshold |
+|-----------|-----------|---------------|-----------------|
+| v₄ `security_risk` | `semantic_security` | Bandit `weighted_severity` | ρ < 0.75 |
+| v₆ `testability` | `semantic_testability` | Radon `1 − cyclomatic_norm` | ρ < 0.75 |
+| v₇ `maintainability` | `semantic_maintainability` | Radon `maintainability_index` | ρ < 0.75 |
+| v₈ `technical_debt` | `semantic_debt_assessment` | Radon `debt_ratio` | ρ < 0.75 |
+
+**Go/no-go decision rule:** If Spearman ρ ≥ 0.75 for all four dimensions → **GO** (proceed to Week 5 pilot). If ρ < 0.75 for any dimension → **NO-GO**: suspend experiment execution, revise the QA agent prompt for the failing dimension(s), expand the normalization bounds in `radon_runner.py` or `bandit_runner.py` if the static analysis source is at fault, and re-run calibration within one week.
+
+**Archival:** The calibration report (ρ per dimension with 95% confidence intervals, scatter plots, outlier artifacts) is archived as an Open Science artifact and cited in the paper's Methods section. This documentation is required for CHI submission under the Reproducibility Appendix.
+
+**Implementation:** The calibration is executed by `src/experiment/phi_calibration/phi_calibration.py` (see DT-021). The no-go decision is computed automatically and logged with a `PASS`/`FAIL` verdict per dimension.
 
 ### 7.7 10-Week Experiment Timeline
 
@@ -1418,9 +1483,11 @@ Natural language policy injection is the most expressive and least constrained c
 
 ### 10.1 Theoretical Contributions
 
-- The **Natural Cognitive Frontier (NCF)**: a formally defined theoretical construct identifying the optimal abstraction level for human-AI collaboration in complex system oversight.
+- The **Natural Cognitive Frontier (NCF)**: a formally defined HCI design construct identifying the optimal abstraction level for human-AI collaboration in complex system oversight. The NCF is not merely an analytical concept — it is an engineering target: a system is well-designed when it positions the human operator at the NCF, rather than above or below it.
+- The **expertise shift thesis**: as AI system autonomy increases, human expertise does not become less valuable — it migrates from artifact-level manipulation to systemic orchestration. The correct comparison is not "expert engineer vs. vibe coder" but "artifact validator vs. orchestration engineer." TCO is the first framework to operationalize this shift with a formal interface architecture.
 - The **TCO bidirectional loop model**: a formalized architecture for human-AI orchestration that resolves automation bias through structural active judgment rather than interface design.
 - Application of tensor-based state representation to the domain of **human cognitive oversight of software quality** — a novel combination of multi-agent representation theory and human factors engineering.
+- The **orchestration engineer** as an emerging professional role: a practitioner whose core competency is systemic supervision, policy design, and emergent behavior diagnosis — not artifact production. TCO provides the first formal specification of the interface requirements for this role.
 
 ### 10.2 Practical Contributions
 

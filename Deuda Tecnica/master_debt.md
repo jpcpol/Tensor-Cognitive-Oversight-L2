@@ -12,12 +12,12 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-001 | Instalar entornos de dependencias | Crítica | Pendiente |
 | DT-002 | Implementar `vectorizer.py` | Crítica | Implementado |
 | DT-003 | Implementar prompt del QA Agent | Crítica | Implementado |
-| DT-004 | Implementar `ControlGroupViewer.tsx` | Crítica | Decisión Tomada |
+| DT-004 | Implementar `ControlGroupViewer.tsx` | Crítica | Implementado |
 | DT-005 | Definir warm-up pipeline | Importante | Pendiente |
 | DT-006 | Implementar `policy_processor.py` | Importante | Decisión Tomada |
 | DT-007 | Protocolo de reclutamiento n=40 | Importante | Decisión Tomada |
 | DT-008 | Migración a TimescaleDB | Importante | Decisión Tomada |
-| DT-009 | `tsconfig.json` y `vite.config.ts` | Importante | Pendiente |
+| DT-009 | `tsconfig.json` y `vite.config.ts` | Importante | Implementado |
 | DT-010 | Dashboard Dockerfile multi-stage | Recomendado | Pendiente |
 | DT-011 | `kappa_validator.py` para PIQ | Recomendado | Pendiente |
 | DT-012 | Scripts de análisis estadístico | Recomendado | Pendiente |
@@ -26,10 +26,10 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-015 | Sección Related Work del paper | Recomendado | Implementado |
 | DT-016 | Adaptar paper a formato LaTeX/ACM | Recomendado | Implementado |
 | DT-017 | Implementar ArtifactCache (Redis) | Recomendado | Implementado |
-| DT-018 | Paper — Defender necesidad matemática del tensor | Importante | Pendiente |
-| DT-019 | Paper — Gate formal de validación φ pre-piloto | Crítica | Pendiente |
-| DT-020 | Paper — Reencuadrar con narrativa expertise shift | Recomendado | Pendiente |
-| DT-021 | Suite de calibración φ (Spearman ρ) | Crítica | Pendiente |
+| DT-018 | Paper — Defender necesidad matemática del tensor | Importante | Implementado |
+| DT-019 | Paper — Gate formal de validación φ pre-piloto | Crítica | Implementado |
+| DT-020 | Paper — Reencuadrar con narrativa expertise shift | Recomendado | Implementado |
+| DT-021 | Suite de calibración φ (Spearman ρ) | Crítica | Implementado |
 | DT-022 | Rubrica PIQ a nivel struct para H5 | Importante | Pendiente |
 | DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Pendiente |
 
@@ -90,7 +90,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 ### DT-004 · Implementar la interfaz del grupo control (ControlGroupViewer)
 
 **Componente:** `src/dashboard/src/experiment/ControlGroupViewer.tsx`  
-**Estado:** Decisión Tomada — especificada en paper Sección 6.1.1, archivo creado, implementación pendiente  
+**Estado:** Implementado — viewer multi-tab (code/yaml/architecture/ci_cd), correction form con severity dropdown, timer visible, corrections log, mismas dimensiones de layout que el TCO dashboard. Props: sessionId, taskId, artifacts[], onTaskComplete callback.  
 **Descripción:** La interfaz del grupo control debe ser tan estandarizada como el dashboard TCO. Requiere:
 
 - Multi-tab viewer: código Python, YAML, markdown de arquitectura, logs CI/CD
@@ -159,7 +159,7 @@ SELECT create_hypertable('evaluation_vectors', 'created_at');
 ### DT-009 · Configurar `tsconfig.json` y `vite.config.ts` del dashboard
 
 **Componente:** `src/dashboard/`  
-**Estado:** Pendiente  
+**Estado:** Implementado — tsconfig.json (strict mode, ES2022, react-jsx) + tsconfig.node.json + vite.config.ts (port 3000, proxy /api → localhost:8000, es2022 build target)  
 **Descripción:** Configurar TypeScript strict mode y Vite para el dashboard React. Incluye:
 
 - `tsconfig.json`: strict: true, target ES2022
@@ -261,8 +261,8 @@ Threshold: κ ≥ 0.70 por dimensión antes de usar el LLM-Judge en el experimen
 
 ### DT-019 · Gate formal de validación φ pre-piloto
 
-**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Section 7.6) + nuevo protocolo  
-**Estado:** Pendiente — bloqueador para Semana 5 (pilot)  
+**Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Section 7.6) + `src/experiment/phi_calibration/phi_calibration.py`  
+**Estado:** Implementado — subsección 7.6.1 "φ Calibration Protocol — Formal No-Go Gate" añadida al paper. Corpus de 20-30 artefactos sintéticos, tablas de ground truth por escenario S1-S5, regla go/no-go ρ ≥ 0.75 por las 4 dimensiones, plan de acción en caso de no-go, archival como Open Science artifact.  
 **Descripción:** La validación de φ existe mencionada como "amenaza a la validez" pero no está especificada como gate formal de no-go. Necesita:
 
 1. Definir el protocolo de calibración: 20–30 artefactos sintéticos con ground truth conocido (incluyendo los 5 escenarios S1–S5 con sus deltas vectoriales documentados)
@@ -276,8 +276,8 @@ Threshold: κ ≥ 0.70 por dimensión antes de usar el LLM-Judge en el experimen
 
 ### DT-021 · Suite de calibración φ — medición Spearman ρ
 
-**Componente:** `src/experiment/phi_calibration/` (nuevo directorio)  
-**Estado:** Pendiente — bloqueador para Semana 5 (pilot)  
+**Componente:** `src/experiment/phi_calibration/phi_calibration.py`  
+**Estado:** Implementado — script CLI con corpus JSON, Spearman ρ bootstrapeado (CI 95%), scatter plots por dimensión, go/no-go automático con exit code 0/1. EvaluationMetrics en qa_evaluator.py extendido con semantic_security y semantic_debt_assessment (+ _OUTPUT_SCHEMA + _SYSTEM_PROMPT + few-shot examples + _fallback_metrics actualizados).  
 **Descripción:** Implementar herramienta que mida automáticamente el acuerdo entre LLM-QA y análisis estático en las dimensiones donde ambos tienen cobertura:
 
 - **v₄ security_risk:** LLM semantic_security (no está actualmente en EvaluationMetrics — agregar) vs. Bandit weighted_severity
@@ -300,7 +300,7 @@ Outputs del script:
 ### DT-018 · Paper — Defender necesidad matemática del tensor
 
 **Componente:** `Documentacion/TCO_Paper_Final_v3.md` Section 5.3  
-**Estado:** Pendiente — bloqueador de calidad para submission  
+**Estado:** Implementado — subsección 4.3.4 "Tensor Necessity: Why Not a Relational Table?" añadida con argumento S3/S5, operaciones de slicing comparadas con SQL self-joins, conclusión: first-classness del tensor es necesidad matemática para los objetivos de detección de TCO.  
 **Descripción:** Crítica anticipada: "el tensor es una metáfora matemática conveniente, no una necesidad". El paper necesita un argumento explícito. Insertar un párrafo en Section 5.3 (Layer 4 — The Cognitive Tensor) con la siguiente estructura:
 
 **¿Por qué un tensor y no una tabla relacional?**
@@ -342,7 +342,7 @@ Una tabla relacional puede almacenar los mismos datos, pero la operación semán
 ### DT-020 · Paper — Reencuadrar con narrativa "expertise shift"
 
 **Componente:** `Documentacion/TCO_Paper_Final_v3.md` (Introduction + Abstract)  
-**Estado:** Pendiente  
+**Estado:** Implementado — Abstract: añadido párrafo sobre expertise shift como claim central. Introduction: reencuadre como "wrong abstraction level for the new engineering role". Section 4.2: párrafo SRE/observabilidad como analogía (Datadog → monitoreo operacional, TCO → monitoreo semántico). Section 10.1: NCF como constructo HCI para el rol "orchestration engineer" + expertise shift thesis como contribución teórica explícita.  
 **Descripción:** El framing actual de la Introducción enfatiza "reducción de carga cognitiva". El argumento más potente (identificado en evaluación externa) es el **desplazamiento del expertise**:
 
 > TCO no dice que la experiencia técnica desaparece. Dice que el expertise se desplaza desde manipular artefactos hacia supervisar comportamientos emergentes. Cuanto más autónoma es la IA, más crítica se vuelve la capacidad de supervisión sistémica.
@@ -371,5 +371,5 @@ Este análisis es la evidencia empírica directa contra "tensor washing". Inclui
 
 ---
 
-*Última actualización: Mayo 2026*  
-*Próxima revisión: al completar Semana 2 del roadmap*
+*Última actualización: 20 Mayo 2026*  
+*Próxima revisión: al completar Semana 3 (pipeline LangGraph + validación φ en corpus)*

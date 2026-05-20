@@ -20,7 +20,7 @@ ArtifactType = Literal["python_code", "yaml_config", "architecture_doc", "ci_cd_
 
 _SYSTEM_PROMPT = """\
 You are a senior software quality analyst evaluating AI-generated software artifacts.
-Your task is to assess the quality of the provided artifact across six semantic dimensions.
+Your task is to assess the quality of the provided artifact across eight semantic dimensions.
 Return ONLY valid JSON matching the exact schema described — no prose, no markdown.
 
 DIMENSION DEFINITIONS:
@@ -41,6 +41,14 @@ DIMENSION DEFINITIONS:
 - semantic_testability [0,1]: How easy is this artifact to unit-test in isolation?
   Consider coupling, side effects, and dependency injection.
   1.0 = highly testable (pure functions, injected deps), 0.0 = hard to test.
+- semantic_security [0,1]: How secure is the artifact against known vulnerability
+  patterns (injection, broken auth, insecure deserialization, secrets in code)?
+  1.0 = no detectable security issues, 0.0 = critical vulnerabilities present.
+  Score what is visible; do not penalize for unknown runtime context.
+- semantic_debt_assessment [0,1]: How much accumulated technical debt does this artifact
+  represent? Consider: workarounds, TODO comments, duplicated logic, missing abstractions,
+  known-bad patterns left in place. 1.0 = clean with no visible debt,
+  0.0 = severe accumulated shortcuts that will compound.
 
 IMPORTANT: Score what is present, not what is absent. A YAML config cannot be scored
 on Python testability — use 0.5 as a neutral value for dimensions not applicable to
@@ -73,10 +81,13 @@ _FEW_SHOT_EXAMPLES = [
             "performance_score": 0.80,
             "semantic_maintainability": 0.82,
             "semantic_testability": 0.78,
+            "semantic_security": 0.88,
+            "semantic_debt_assessment": 0.83,
             "reasoning": (
                 "Clean repository pattern with proper type hints and logging. "
                 "Missing input validation (user_id type guard) and the db dependency "
-                "is injected which aids testability. Not testing error path explicitly."
+                "is injected which aids testability. Parameterized query via ORM is "
+                "safe from injection. No obvious debt."
             ),
             "confidence_self_assessment": 0.88,
         }),
@@ -102,11 +113,14 @@ _FEW_SHOT_EXAMPLES = [
             "performance_score": 0.50,
             "semantic_maintainability": 0.30,
             "semantic_testability": 0.35,
+            "semantic_security": 0.05,
+            "semantic_debt_assessment": 0.20,
             "reasoning": (
                 "Critical SQL injection via f-string interpolation of user_id. "
                 "No type hints, no logging, raw db reference instead of ORM. "
                 "Returns raw tuple instead of domain object. Architecture bypasses "
-                "the ORM layer entirely."
+                "the ORM layer entirely. Security score near zero: direct string "
+                "interpolation into SQL is a textbook injection vector."
             ),
             "confidence_self_assessment": 0.95,
         }),
@@ -133,11 +147,15 @@ _FEW_SHOT_EXAMPLES = [
             "performance_score": 0.50,
             "semantic_maintainability": 0.20,
             "semantic_testability": 0.50,
+            "semantic_security": 0.70,
+            "semantic_debt_assessment": 0.15,
             "reasoning": (
                 "Explicit circular dependency between order-service and payment-service. "
                 "This will cause initialization deadlock and prevents independent deployment. "
                 "The circular reference makes the system impossible to scale independently "
-                "and very difficult to maintain. Testability is neutral (N/A for YAML)."
+                "and very difficult to maintain. Testability is neutral (N/A for YAML). "
+                "Security: no obvious credentials or injection. Debt: the circular dep "
+                "itself is severe accumulated structural debt."
             ),
             "confidence_self_assessment": 0.92,
         }),
@@ -146,22 +164,25 @@ _FEW_SHOT_EXAMPLES = [
 
 _OUTPUT_SCHEMA = {
     "name": "evaluate_artifact",
-    "description": "Return quality scores for the artifact across six semantic dimensions.",
+    "description": "Return quality scores for the artifact across eight semantic dimensions.",
     "input_schema": {
         "type": "object",
         "properties": {
-            "functional_correctness":   {"type": "number", "minimum": 0, "maximum": 1},
-            "architectural_alignment":  {"type": "number", "minimum": 0, "maximum": 1},
-            "scalability_projection":   {"type": "number", "minimum": 0, "maximum": 1},
-            "performance_score":        {"type": "number", "minimum": 0, "maximum": 1},
-            "semantic_maintainability": {"type": "number", "minimum": 0, "maximum": 1},
-            "semantic_testability":     {"type": "number", "minimum": 0, "maximum": 1},
-            "reasoning":                {"type": "string"},
+            "functional_correctness":     {"type": "number", "minimum": 0, "maximum": 1},
+            "architectural_alignment":    {"type": "number", "minimum": 0, "maximum": 1},
+            "scalability_projection":     {"type": "number", "minimum": 0, "maximum": 1},
+            "performance_score":          {"type": "number", "minimum": 0, "maximum": 1},
+            "semantic_maintainability":   {"type": "number", "minimum": 0, "maximum": 1},
+            "semantic_testability":       {"type": "number", "minimum": 0, "maximum": 1},
+            "semantic_security":          {"type": "number", "minimum": 0, "maximum": 1},
+            "semantic_debt_assessment":   {"type": "number", "minimum": 0, "maximum": 1},
+            "reasoning":                  {"type": "string"},
             "confidence_self_assessment": {"type": "number", "minimum": 0, "maximum": 1},
         },
         "required": [
             "functional_correctness", "architectural_alignment", "scalability_projection",
             "performance_score", "semantic_maintainability", "semantic_testability",
+            "semantic_security", "semantic_debt_assessment",
             "reasoning", "confidence_self_assessment",
         ],
     },
@@ -169,13 +190,16 @@ _OUTPUT_SCHEMA = {
 
 
 class EvaluationMetrics(BaseModel):
-    """Structured output from LLM quality evaluation — maps to v1, v2, v3, v9."""
+    """Structured output from LLM quality evaluation — maps to v1, v2, v3, v9 + calibration fields."""
     functional_correctness:   float = Field(ge=0.0, le=1.0)
     architectural_alignment:  float = Field(ge=0.0, le=1.0)
     scalability_projection:   float = Field(ge=0.0, le=1.0)
     performance_score:        float = Field(ge=0.0, le=1.0)
     semantic_maintainability: float = Field(ge=0.0, le=1.0)
     semantic_testability:     float = Field(ge=0.0, le=1.0)
+    # Calibration fields — compared against bandit/radon in phi_calibration.py
+    semantic_security:        float = Field(ge=0.0, le=1.0)
+    semantic_debt_assessment: float = Field(ge=0.0, le=1.0)
     reasoning:                str
     confidence_self_assessment: float = Field(ge=0.0, le=1.0)
 
@@ -209,6 +233,8 @@ def _fallback_metrics() -> EvaluationMetrics:
         performance_score=0.5,
         semantic_maintainability=0.5,
         semantic_testability=0.5,
+        semantic_security=0.5,
+        semantic_debt_assessment=0.5,
         reasoning="LLM evaluation unavailable — neutral fallback applied.",
         confidence_self_assessment=0.0,
     )
