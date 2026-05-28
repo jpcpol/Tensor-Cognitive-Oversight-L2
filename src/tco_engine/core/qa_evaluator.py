@@ -325,7 +325,7 @@ class QAEvaluator:
 
         response = self._client.chat.completions.create(
             model=self._model,
-            max_tokens=1024,   # increased — reasoning field can be long
+            max_tokens=2048,   # generous — reasoning field on complex artifacts can be long
             tools=[_OUTPUT_SCHEMA_OPENAI],
             tool_choice={"type": "function", "function": {"name": "evaluate_artifact"}},
             messages=messages,
