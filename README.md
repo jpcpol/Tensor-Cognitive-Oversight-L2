@@ -1,13 +1,14 @@
-# TENSOR-BASED COGNITIVE OVERSIGHT (TCO)
+# TENSOR-BASED COGNITIVE OVERSIGHT — TCO-L2
 
 ### A Framework for Human Orchestration of AI-Driven Software Systems
+#### Layer 2 of the Cognitive Abstraction Layer (CAL) Architecture
 
 **Author:** Juan Pablo Chancay  
 **Version:** v3.0 — Working Paper / Preprint  
 **Date:** May 2026  
 **License:** [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (docs) · [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) (src)
 
-> *This repository constitutes the public registration of the TCO framework and the Natural Cognitive Frontier (NCF) theoretical construct. Deposited for intellectual priority purposes ahead of experimental execution and formal venue submission.*
+> *This repository constitutes the public registration of the TCO-L2 framework and the Natural Cognitive Frontier (NCF) theoretical construct. TCO-L2 is Layer 2 of the CAL architecture — a four-level hierarchy spanning raw artifact streams (L0) to autonomous meta-inference (L4). The full research agenda is described in [`Documentacion/CAL_PrePaper_v1.md`](Documentacion/CAL_PrePaper_v1.md). Deposited for intellectual priority purposes ahead of experimental execution and formal venue submission.*
 
 ---
 
@@ -294,7 +295,8 @@ See Section 10.3 of [`Documentacion/TCO_Paper_Final_v3.md`](Documentacion/TCO_Pa
 ```
 TCO/
 ├── Documentacion/
-│   ├── TCO_Paper_Final_v3.md          # Extended working paper (11 sections)
+│   ├── TCO_Paper_Final_v3.md          # TCO-L2 extended working paper (11 sections)
+│   ├── CAL_PrePaper_v1.md             # CAL architecture pre-paper (L0–L4 research agenda)
 │   ├── TCO_LaTeX/
 │   │   ├── main.tex                   # ACM manuscript — CHI 2027 submission draft
 │   │   └── references.bib             # 30 BibTeX entries

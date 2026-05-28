@@ -1,8 +1,11 @@
-# TENSOR-BASED COGNITIVE OVERSIGHT (TCO)
+# TENSOR-BASED COGNITIVE OVERSIGHT — TCO-L2
 ### A Framework for Human Orchestration of AI-Driven Software Systems
+#### Layer 2 of the Cognitive Abstraction Layer (CAL) Architecture
 
 **Working Paper — Confidential Draft for Peer Review**
-**2025 · v2.0 — Includes Experimental Design, MVP Architecture & Software Implementation Plan**
+**2026 · v3.0 — Includes Experimental Design, MVP Architecture & Software Implementation Plan**
+
+> *This paper formalizes and empirically validates Layer 2 (L2) of the CAL architecture [Chancay 2026b]. The full four-level research agenda — spanning L0 raw artifacts to L4 autonomous meta-inference — is described in the companion pre-paper: `Documentacion/CAL_PrePaper_v1.md`.*
 
 ---
 
