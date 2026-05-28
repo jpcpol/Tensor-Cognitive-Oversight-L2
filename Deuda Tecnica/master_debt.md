@@ -31,7 +31,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-019 | Paper — Gate formal de validación φ pre-piloto | Crítica | Implementado |
 | DT-020 | Paper — Reencuadrar con narrativa expertise shift | Recomendado | Implementado |
 | DT-021 | Suite de calibración φ (Spearman ρ) | Crítica | Implementado |
-| DT-022 | Rubrica PIQ a nivel struct para H5 | Importante | Pendiente |
+| DT-022 | Rubrica PIQ a nivel struct para H5 | Importante | Implementado |
 | DT-023 | Script tensor necessity proof (analysis/) | Recomendado | Implementado |
 | DT-024 | Paper — Evaluator variance y rigor LLM-QA | Importante | Pendiente |
 | DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Pendiente |
