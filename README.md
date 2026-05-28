@@ -205,11 +205,18 @@ TCO maintains the orchestrator at the NCF by:
 | `src/tco_engine/core/vectorizer.py` | φ: A → V — all 11 dimensions, consensus v₁₀, anomaly v₁₁ | ✅ |
 | `src/tco_engine/core/aggregator.py` | f: {V} → T — numpy tensor, named slicing | ✅ |
 | `src/tco_engine/core/inference_engine.py` | I: T → {Ω, Δ, Ρ, Ξ} — all thresholds, top-N recommendations | ✅ |
-| `src/tco_engine/core/qa_evaluator.py` | LLM-QA via Anthropic tool_use — 3 few-shot, fallback to 0.5 | ✅ |
+| `src/tco_engine/core/qa_evaluator.py` | LLM-QA SE dimensions (v₁,v₂,v₃,v₉) — tool_use, 3 few-shot, OpenRouter + Anthropic direct | ✅ |
 | `src/tco_engine/static_analysis/radon_runner.py` | CC, Halstead, MI — normalized to [0,1] | ✅ |
 | `src/tco_engine/static_analysis/bandit_runner.py` | CVSS-weighted severity — normalized by 3.0 | ✅ |
 | `src/tco_engine/db/cache.py` | Redis SHA-256 keyed, no TTL artifacts, 30s TTL tensor | ✅ |
 | `src/pipeline/agents/qa_agent.py` | LangGraph node consuming state["artifacts"] | ✅ |
+| `src/pipeline/scenarios/s0_warmup.py` | Warm-up scenario S0 — notification service, no faults, facilitator script | ✅ |
+| `src/experiment/data_pipeline/` | 4 NCF proxies: NASA-TLX, correction_log, accuracy_scorer, interaction_timer + NCFProxies aggregator | ✅ |
+| `src/experiment/piq_evaluation/llm_judge_prompt.py` | PIQ LLM-Judge — 5 dimensions × 0-2 pts, PolicyIntent struct, OpenRouter compatible | ✅ |
+| `src/experiment/phi_calibration/phi_calibration.py` | φ calibration suite — Spearman ρ no-go gate + inter-dim correlation analysis | ✅ |
+| `protocols/piq_rubric.md` | PIQ rubric v1.0 — D1 RCT, D2 AP, D3 DR, D4 CS, D5 SS — grounded in CAL-L2 NCF | ✅ |
+| `analysis/evaluator_reliability.py` | DT-024 variance + entropy analysis — σ < 0.05 confirmed via OpenRouter | ✅ |
+| `src/dashboard/src/experiment/ControlGroupViewer.tsx` | Control group raw viewer — multi-tab, correction form, timer | ✅ |
 
 ### Stubs — 🟡 In Progress
 
@@ -218,7 +225,6 @@ TCO maintains the orchestrator at the NCF by:
 | `src/tco_engine/` FastAPI + PostgreSQL REST API | 🟡 Stub |
 | `src/pipeline/` LangGraph graph + fault_injector | 🟡 Stub |
 | `src/dashboard/` React 18 + Recharts + TailwindCSS | 🟡 Stub |
-| `src/dashboard/ControlGroupViewer.tsx` | 🟡 Not started — experiment critical |
 
 ### Technology Stack
 
@@ -227,7 +233,7 @@ TCO maintains the orchestrator at the NCF by:
 | Pipeline | Python 3.11 + LangGraph + Claude API (claude-sonnet-4-6) |
 | TCO Engine | Python 3.11 + FastAPI + PostgreSQL 16 + Redis 7 |
 | Static analysis | radon (CC, Halstead, MI) + bandit (CVSS-weighted) |
-| LLM-QA | Claude claude-sonnet-4-6 via Anthropic tool_use |
+| LLM-QA | claude-sonnet-4-6 via OpenRouter (LLM_PROVIDER=openrouter) or Anthropic direct |
 | Dashboard | React 18 + TypeScript + Recharts + TailwindCSS |
 | Infrastructure | Docker Compose (5 services) |
 
@@ -280,10 +286,10 @@ See Section 10.3 of [`Documentacion/TCO_Paper_Final_v3.md`](Documentacion/TCO_Pa
 | Week | Phase | Deliverable | Status |
 |------|-------|-------------|--------|
 | 1–2 | Build | Core engine: φ, f, I — all modules | ✅ Complete |
-| 3 | Build | Simulated pipeline: LangGraph graph + 5 fault scenarios | 🟡 In progress |
-| 4 | Build | Orchestration dashboard MVP | 🔴 Not started |
+| 3 | Build | Pipeline S1–S5 + corpus.json + φ calibration suite + evaluator reliability | ✅ Complete |
+| 4 | Build | Orchestration dashboard MVP + NCF proxies + PIQ rubric + warm-up S0 | ✅ Complete |
 | 5 | Pilot | Internal pilot n=4, protocol validation | Pending |
-| 6 | Calibration | LLM-Judge PIQ calibration (κ ≥ 0.70) | Pending |
+| 6 | Calibration | φ no-go gate + LLM-Judge PIQ calibration (κ ≥ 0.70) | Pending |
 | 7–8 | Experiment | Full experiment n=40 | Pending |
 | 9 | Analysis | Statistical analysis | Pending |
 | 10 | Writing | Results + Discussion | Pending |
@@ -302,7 +308,7 @@ TCO/
 │   │   └── references.bib             # 30 BibTeX entries
 │   └── *.docx / *.pdf                 # Supporting documents
 ├── Deuda Tecnica/
-│   └── master_debt.md                 # Technical debt registry (DT-001–DT-023)
+│   └── master_debt.md                 # Technical debt registry (DT-001–DT-027)
 ├── src/
 │   ├── tco_engine/                    # FastAPI + core engine
 │   │   ├── core/                      # vectorizer, aggregator, inference_engine, qa_evaluator

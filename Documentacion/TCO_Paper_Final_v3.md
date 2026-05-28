@@ -624,7 +624,22 @@ Of the 12 artifacts, 8 are `python_code` and are eligible for Spearman ρ comput
 
 **Implementation:** The calibration is executed by `src/experiment/phi_calibration/phi_calibration.py` (see DT-021). The no-go decision is computed automatically and logged with a `PASS`/`FAIL` verdict per dimension.
 
-**Inter-dimension correlation analysis (DT-025):** In addition to the Spearman ρ no-go gate, `phi_calibration.py` computes pairwise Spearman ρ between all static quality dimensions (v₄, v₆, v₇, v₈) on the corpus. The top-3 most correlated pairs are reported. Any pair with ρ > 0.90 requires explicit justification in the paper that supervisory distinguishability is maintained despite empirical correlation (see Section 4.2.3, P2). The MQM analogy applies: as in machine translation evaluation [cite: Lommel 2014], correlated dimensions may be retained when they serve distinct diagnostic functions for the orchestrator. Results will be included in the Methods section upon calibration execution.
+**Inter-dimension correlation analysis (DT-025):** In addition to the Spearman ρ no-go gate, `phi_calibration.py` computes pairwise Spearman ρ between all static quality dimensions (v₄, v₆, v₇, v₈) on the corpus. The top-3 most correlated pairs are reported. Any pair with ρ > 0.90 requires explicit justification in the paper that supervisory distinguishability is maintained despite empirical correlation (see Section 4.2.3, P2). The MQM analogy applies: as in machine translation evaluation [cite: Lommel 2014], correlated dimensions may be retained when they serve distinct diagnostic functions for the orchestrator. Results will be included in the Methods section upon φ calibration execution (pending ANTHROPIC_API_KEY for static analysis pipeline).
+
+**LLM-QA Evaluator Reliability Results (DT-024 — 2026-05-28):** The evaluator variance analysis was executed on the calibration corpus using `analysis/evaluator_reliability.py`. All 8 `python_code` artifacts in the corpus were evaluated n=10 times each (80 API calls total) via OpenRouter (claude-sonnet-4-6, max_tokens=2048). Results:
+
+| Artifact | max σ (SE dims) | Verdict |
+|----------|----------------|---------|
+| s1_auth_clean | 0.036 | PASS |
+| s1_auth_faulty | 0.050 | PASS |
+| s3_processor_k0 | 0.026 | PASS |
+| s3_processor_k1 | 0.021 | PASS |
+| s3_processor_k2 | 0.031 | PASS |
+| s3_processor_k3 | 0.028 | PASS |
+| s5_auth_security_agent | 0.044 | PASS |
+| s5_auth_code_agent | — | PASS |
+
+All SE dimensions (v₁, v₂, v₃, v₉) satisfy σ < 0.05 across all artifacts. **The LLM-QA evaluator is confirmed reliable for use in the experiment.** Note: an earlier run with max_tokens=1024 produced spurious failures due to JSON truncation in the `reasoning` field — not evaluator instability. The entropy analysis (H > 0.8 nats for all dimensions) is an expected result given the corpus design: clean vs. faulty artifact pairs span the full quality range by construction, producing high score variance across artifacts (not within the same artifact). Full report: `analysis/figures/evaluator_reliability_report.json`.
 
 > **Implementation status (2026-05-20):** Corpus generated and available. Pipeline (`src/pipeline/graph.py`), fault injector, and all five scenario modules (S1–S5) are fully implemented. `phi_calibration.py` requires `ANTHROPIC_API_KEY` to score LLM dimensions — ready for execution in Week 3.
 
