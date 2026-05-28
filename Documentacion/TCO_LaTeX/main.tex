@@ -331,23 +331,26 @@ policy flows downward from the human through layer 6 back to layer 1.
 \end{equation}
 
 \begin{table}[t]
-  \caption{The 11-Dimension Evaluation Vector}
+  \caption{The 11-Dimension Evaluation Vector.
+    \textbf{SE} = supervisory estimator (LLM-QA heuristic semantic signal;
+    no universal ground truth).
+    \textbf{GT} = verifiable ground truth (deterministic static analysis).}
   \label{tab:vector}
-  \begin{tabular}{clcc}
+  \begin{tabular}{clccc}
     \toprule
-    \# & Dimension & Source & Inverted \\
+    \# & Dimension & Source & Type & Inv. \\
     \midrule
-    $v_1$ & functional\_correctness & LLM-QA & --- \\
-    $v_2$ & architectural\_alignment & LLM-QA & --- \\
-    $v_3$ & scalability\_projection & LLM-QA & --- \\
-    $v_4$ & security\_risk & Bandit & $\checkmark$ \\
-    $v_5$ & observability\_coverage & Radon & --- \\
-    $v_6$ & testability & Radon & $\checkmark$ CC \\
-    $v_7$ & maintainability & Radon & $\checkmark$ Halstead \\
-    $v_8$ & technical\_debt & Radon & $\checkmark$ MI \\
-    $v_9$ & performance & LLM-QA & --- \\
-    $v_{10}$ & confidence & Consensus & --- \\
-    $v_{11}$ & anomaly\_score & Z-score & $\checkmark$ \\
+    $v_1$ & functional\_correctness & LLM-QA & \textbf{SE} & --- \\
+    $v_2$ & architectural\_alignment & LLM-QA & \textbf{SE} & --- \\
+    $v_3$ & scalability\_projection & LLM-QA & \textbf{SE} & --- \\
+    $v_4$ & security\_risk & Bandit & GT & $\checkmark$ \\
+    $v_5$ & observability\_coverage & Radon & GT & --- \\
+    $v_6$ & testability & Radon & GT & $\checkmark$ \\
+    $v_7$ & maintainability & Radon & GT & $\checkmark$ \\
+    $v_8$ & technical\_debt & Radon & GT & $\checkmark$ \\
+    $v_9$ & performance & LLM-QA & \textbf{SE} & --- \\
+    $v_{10}$ & confidence & Consensus & --- & --- \\
+    $v_{11}$ & anomaly\_score & Z-score & --- & $\checkmark$ \\
     \bottomrule
   \end{tabular}
 \end{table}
@@ -548,8 +551,10 @@ The vectorizer $\phi$ combines three sources:
   \item \textbf{Radon} (static): cyclomatic complexity ($v_6$), Halstead volume
     ($v_7$), maintainability index ($v_8$).
   \item \textbf{Bandit} (static): CVSS-equivalent severity scoring ($v_4$).
-  \item \textbf{LLM-QA} (semantic): structured tool-use evaluation of $v_1, v_2, v_3, v_9$
-    using few-shot prompting with three calibration examples per artifact type.
+  \item \textbf{LLM-QA} (\textbf{SE} --- supervisory estimators): structured tool-use
+    evaluation of $v_1, v_2, v_3, v_9$ using few-shot prompting. These dimensions are
+    heuristic semantic signals providing decision-relevant information to the orchestrator;
+    they do not constitute objective quality certificates and have no universal ground truth.
 \end{itemize}
 
 Confidence ($v_{10}$) is computed as inter-rater agreement between radon and LLM-QA

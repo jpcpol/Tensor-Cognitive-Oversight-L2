@@ -36,7 +36,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-024 | Paper — Evaluator variance y rigor LLM-QA | Importante | Pendiente |
 | DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Implementado |
 | DT-026 | Experimento — 4 proxies NCF operacionalizados en infra | Importante | Implementado |
-| DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Pendiente |
+| DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Implementado |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`

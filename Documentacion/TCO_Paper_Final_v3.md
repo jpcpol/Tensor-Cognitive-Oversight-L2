@@ -261,21 +261,23 @@ where:  wᵢⱼ = weight of metric j within pilar i  (calibrable by domain)
 
 #### 4.2.2 The Eleven Quality Pillars
 
-| Dim | Name | Operational Definition | Representative Metrics |
-|-----|------|----------------------|------------------------|
-| v₁ | `functional_correctness` | Degree to which the artifact fulfills specified functional requirements | Test pass rate, assertion coverage, behavioral validation |
-| v₂ | `architectural_alignment` | Coherence with defined architectural patterns and principles | Coupling index, pattern compliance score, dependency depth |
-| v₃ | `scalability_projection` | Projected capacity of the system to grow under incremental load | Load test extrapolation, algorithmic complexity, resource growth rate |
-| v₄ | `security_risk` ↓ | Level of detected vulnerability and attack surface (inverted: 1=no risk) | CVSS score, attack surface area, dependency vulnerability count |
-| v₅ | `observability_coverage` | Extent of log, metric, and trace coverage of the system | Log coverage %, metric instrumentation rate, trace depth |
-| v₆ | `testability` | Ease with which the artifact can be automatically validated | Cyclomatic complexity, mock dependency ratio, test isolation index |
-| v₇ | `maintainability` | Ease of understanding, modifying, and extending the artifact | Halstead volume, code churn rate, documentation ratio |
-| v₈ | `technical_debt` ↓ | Accumulation of shortcuts compromising future system health (inverted) | Debt ratio, code smell density, deferred refactoring backlog |
-| v₉ | `performance` | Efficiency in resource use and response latency under normal conditions | P95 latency, CPU/memory utilization, throughput benchmark |
-| v₁₀ | `confidence` | Certainty level of the QA evaluation produced by agents | Model confidence score, inter-agent consensus, data coverage |
-| v₁₁ | `anomaly_score` ↓ | Deviation from expected historical patterns (inverted: 1=no anomaly) | Z-score vs historical baseline, outlier detection flag |
+| Dim | Name | Operational Definition | Signal Source | Type |
+|-----|------|----------------------|---------------|------|
+| v₁ | `functional_correctness` | LLM-estimated degree to which the artifact fulfills specified functional requirements | LLM-QA semantic assessment | **SE** |
+| v₂ | `architectural_alignment` | LLM-estimated coherence with defined architectural patterns and principles | LLM-QA semantic assessment | **SE** |
+| v₃ | `scalability_projection` | LLM-estimated projected capacity to grow under incremental load | LLM-QA semantic assessment | **SE** |
+| v₄ | `security_risk` ↓ | Detected vulnerability and attack surface — deterministic (inverted: 1=no risk) | Bandit static analysis | GT |
+| v₅ | `observability_coverage` | Extent of log, metric, and trace coverage of the system | Radon log density | GT |
+| v₆ | `testability` | Cyclomatic complexity — ease of automated validation (inverted) | Radon CC | GT |
+| v₇ | `maintainability` | Halstead volume and MI index — ease of understanding and modifying | Radon Halstead/MI | GT |
+| v₈ | `technical_debt` ↓ | Debt ratio — accumulation of shortcuts (inverted) | Radon MI | GT |
+| v₉ | `performance` | LLM-estimated efficiency in resource use and response latency | LLM-QA semantic assessment | **SE** |
+| v₁₀ | `confidence` | Certainty level of the QA evaluation — consensus between SE and GT signals | Consensus SE ↔ GT | — |
+| v₁₁ | `anomaly_score` ↓ | Deviation from expected historical patterns (inverted: 1=no anomaly) | Z-score vs baseline | — |
 
-> ↓ = inverted pillars: higher raw score = worse quality → normalized as (1 − raw)
+> ↓ = inverted: higher raw score = worse quality → normalized as (1 − raw)  
+> **SE** = *supervisory estimator* — heuristic semantic signal produced by LLM-QA assessment. Provides decision-relevant information to the orchestrator; does not constitute an objective quality certificate. No universal ground truth.  
+> **GT** = *verifiable ground truth* — deterministic static analysis output (Bandit / Radon). Reproducible and objectively measurable.
 
 > **Epistemological note — LLM-sourced dimensions (v₁, v₂, v₃, v₉):** These four dimensions are computed via LLM-QA evaluation and do not have strong universal ground truth. They should be understood as **supervisory estimators** — heuristic semantic signals that provide decision-relevant information to the orchestrator, not objective quality certificates. Their value lies in enabling rapid cross-artifact and cross-temporal comparison within the same pipeline context, not in absolute calibration. Static analysis dimensions (v₄, v₆, v₇, v₈) are grounded in deterministic computation and have verifiable ground truth; the LLM dimensions are explicitly distinct in epistemological status.
 
