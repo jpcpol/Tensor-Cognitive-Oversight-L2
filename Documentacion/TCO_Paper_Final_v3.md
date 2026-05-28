@@ -1523,6 +1523,20 @@ Natural language policy injection is the most expressive and least constrained c
 - **Integration with observability platforms:** mapping TCO quality dimensions to existing metric streams (Prometheus, OpenTelemetry) to reduce instrumentation overhead.
 - **Autonomous policy suggestion:** training a policy generation model on historical P_new entries and their system impact to provide policy drafts for orchestrator review.
 
+- **Hierarchical Abstraction Pyramid: TCO as Level 2 of a multi-tier cognitive compression architecture.** The present work formalizes a single abstraction step: φ maps raw artifacts to quality vectors V ∈ [0,1]¹¹, and f aggregates vectors into a cognitive tensor T[d,i,j,k]. Human oversight at this level is validated by the experiment, but the theoretical contribution extends further. TCO is best understood as the empirical validation of **Level 2** in a four-level abstraction hierarchy:
+
+  | Level | Representation | Operation | Supervisor |
+  |-------|---------------|-----------|------------|
+  | L0 | Tokens / raw artifacts | Generation | AI agents |
+  | L1 | Embeddings / semantic features | Local LLM inference | — |
+  | **L2** | **Cognitive tensor T[d,i,j,k]** | **φ + f + I: T → {Ω,Δ,Ρ,Ξ}** | **Human (NCF) — TCO** |
+  | L3 | Tensor volume V(T₁, T₂, ..., Tₙ) | Cross-session composition, temporal evolution | Automated inference |
+  | L4 | Meta-inference output M(V) | Higher-order reasoning on compressed state | Automated / hybrid |
+
+  The critical observation is that the TCO experiment does not only test whether the dashboard reduces cognitive load. It tests whether **tensor representation is semantically conservative** — whether T[d,i,j,k] preserves sufficient structure for effective high-stakes reasoning. A positive experimental result (H2, H3) constitutes empirical evidence that the abstraction does not destroy decision-relevant information. That evidence is the theoretical foundation for Levels 3 and 4: if a human orchestrator can reason effectively from a tensor representation, an automated inference layer operating on tensor volumes can do so without the human as an intermediary.
+
+  The central open problem at Level 3 is the composition of tensors across time and across pipeline sessions into a stable **tensor volume** V(T₁...Tₙ). The key research questions are: (a) what composition operator preserves causal relationships across T instances while reducing dimensionality; (b) whether the resulting volume exhibits stable attractor states or phase transitions analogous to semantic regime shifts; and (c) whether inference cost on V scales with *structural complexity of the compressed representation* rather than raw artifact count — the hypothesis that would decouple context capacity from computational cost. This connects to active research in State Space Models [Gu & Dao, 2023], hierarchical coarse-graining in physics (renormalization group theory), and tensor decomposition methods [Kolda & Bader, 2009]. The central metric to develop is **Semantic Information Density**: not the quantity of tokens processed but the quantity of decision-relevant cognitive structure preserved per unit of representation. TCO's quality vector V and inference outputs {Ω,Δ,Ρ,Ξ} provide a concrete starting point for operationalizing this metric.
+
 ---
 
 ## 11. References

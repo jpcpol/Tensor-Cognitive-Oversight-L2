@@ -254,6 +254,26 @@ The ACM-formatted LaTeX submission draft is at [`Documentacion/TCO_LaTeX/main.te
 
 ---
 
+## Extended Research Agenda: The Abstraction Pyramid
+
+TCO formalizes **Level 2** of a hierarchical cognitive compression architecture. The current paper validates that the tensor representation is semantically conservative enough for effective human oversight — that validation is the theoretical foundation for the levels above it.
+
+| Level | Representation | Operation | Status |
+|-------|---------------|-----------|--------|
+| L0 | Tokens / raw artifacts | Generation | Baseline |
+| L1 | Embeddings / semantic features | Local LLM inference | Baseline |
+| **L2** | **Cognitive tensor T[d,i,j,k]** | **φ + f + I: T → {Ω,Δ,Ρ,Ξ}** | **TCO — this paper** |
+| L3 | Tensor volume V(T₁...Tₙ) | Cross-session composition, temporal evolution | Future work |
+| L4 | Meta-inference M(V) | Higher-order reasoning on compressed state | Future work |
+
+**The core hypothesis for L3–L4:** inference cost scales with *structural complexity of the compressed representation*, not raw artifact count. If human orchestrators can reason effectively from T (L2), automated inference on tensor volumes (L3) can too — without requiring human working memory as the bridge. The key open problem is demonstrating that the composition operator for V is **semantically conservative**: it preserves causal relationships and decision-relevant structure while reducing dimensionality.
+
+This connects to State Space Models, renormalization group theory (coarse-graining without loss of macroscopic dynamics), and tensor decomposition. The metric to develop: **Semantic Information Density** — not tokens processed, but decision-relevant cognitive structure preserved per unit of representation.
+
+See Section 10.3 of [`Documentacion/TCO_Paper_Final_v3.md`](Documentacion/TCO_Paper_Final_v3.md) for the full research agenda.
+
+---
+
 ## 10-Week Implementation Roadmap
 
 | Week | Phase | Deliverable | Status |
