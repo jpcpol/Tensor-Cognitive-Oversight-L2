@@ -8,7 +8,7 @@
 **Date:** May 2026  
 **License:** [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (docs) · [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) (src)
 
-> *This repository constitutes the public registration of the TCO-L2 framework and the Natural Cognitive Frontier (NCF) theoretical construct. TCO-L2 is Layer 2 of the CAL architecture — a four-level hierarchy spanning raw artifact streams (L0) to autonomous meta-inference (L4). The full research agenda is described in [`Documentacion/CAL_PrePaper_v1.md`](Documentacion/CAL_PrePaper_v1.md). Deposited for intellectual priority purposes ahead of experimental execution and formal venue submission.*
+> *This repository constitutes the public registration of the TCO-L2 framework and the Natural Cognitive Frontier (NCF) theoretical construct. TCO-L2 is Layer 2 of the CAL architecture — a four-level hierarchy spanning raw artifact streams (L0) to autonomous meta-inference (L4). The full research agenda is described in the CAL pre-paper: DOI [10.5281/zenodo.20430343](https://doi.org/10.5281/zenodo.20430343) (Zenodo, May 2026). arXiv submission pending endorsement.*
 
 ---
 
