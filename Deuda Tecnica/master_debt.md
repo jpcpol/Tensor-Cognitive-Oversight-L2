@@ -14,7 +14,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-002 | Implementar `vectorizer.py` | Crítica | Implementado |
 | DT-003 | Implementar prompt del QA Agent | Crítica | Implementado |
 | DT-004 | Implementar `ControlGroupViewer.tsx` | Crítica | Implementado |
-| DT-005 | Definir warm-up pipeline | Importante | Pendiente |
+| DT-005 | Definir warm-up pipeline | Importante | Implementado |
 | DT-006 | Implementar `policy_processor.py` | Importante | Decisión Tomada |
 | DT-007 | Protocolo de reclutamiento n=40 | Importante | Decisión Tomada |
 | DT-008 | Migración a TimescaleDB | Importante | Decisión Tomada |

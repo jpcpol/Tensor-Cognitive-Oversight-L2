@@ -57,6 +57,51 @@ Partial responses are captured and scored with available data (not excluded).
 
 ---
 
+## 2b. Warm-up Pipeline — S0 (Notification Service)
+
+**Scenario:** `S0 — Notification Service` (`src/pipeline/scenarios/s0_warmup.py`)  
+**Duration:** 15 min — no timer pressure, no scoring  
+**Purpose:** interface familiarization only. Results are NOT included in analysis.
+
+### What S0 contains
+
+A healthy async notification dispatcher (Python + Docker Compose YAML).  
+Domain deliberately distinct from S1–S5 (auth / arch / deploy / debt / conflict).  
+No faults injected. All quality dimensions ∈ [0.75, 0.92].
+
+### Facilitator script — Experimental group (TCO Dashboard)
+
+> "You'll see a radar chart with 11 quality dimensions, a system state indicator
+> (Omega showing stable/warning/critical), and a trend panel. This pipeline has
+> no injected faults — everything should look healthy. Explore the interface
+> freely. If you want, write something in the policy injection box. There are
+> no wrong answers here — this is just practice."
+
+After 10 min:
+> "Any questions about the interface? Anything unclear or unexpected?"
+
+### Facilitator script — Control group (ControlGroupViewer)
+
+> "You'll see the source code and configuration for a notification service.
+> Review it and note any observations in the correction form. This pipeline
+> is clean — there are no injected faults. Explore freely."
+
+After 10 min:
+> "Any questions? Anything about the interface you'd like clarified?"
+
+### Transition to experimental block (both groups)
+
+> "Good. The next 5 scenarios follow the same structure, but each has a real
+> quality issue injected. You'll have a visible timer for each task. Let's begin."
+
+### What NOT to say during warm-up
+
+- Do not hint that S1 involves security, S3 involves debt accumulation, etc.
+- Do not explain what Omega=warning looks like — let participants discover it.
+- Do not correct participant assessments — warm-up is practice, not evaluation.
+
+---
+
 ## 3. Environment Setup Checklist
 
 Before each session:
