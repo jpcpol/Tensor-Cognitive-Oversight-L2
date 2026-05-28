@@ -240,22 +240,41 @@ def _fallback_metrics() -> EvaluationMetrics:
     )
 
 
+# OpenAI-format tool schema (for OpenRouter)
+_OUTPUT_SCHEMA_OPENAI = {
+    "type": "function",
+    "function": {
+        "name": "evaluate_artifact",
+        "description": "Return quality scores for the artifact across eight semantic dimensions.",
+        "parameters": _OUTPUT_SCHEMA["input_schema"],
+    },
+}
+
+
 class QAEvaluator:
     """
     LLM-based evaluator for semantic quality dimensions (v1, v2, v3, v9).
-    Uses few-shot prompting and tool_use structured output via the Anthropic API.
+
+    Supports two backends:
+      LLM_PROVIDER=anthropic  → Anthropic SDK (direct API)
+      LLM_PROVIDER=openrouter → OpenAI SDK via OpenRouter (OpenAI-compatible format)
     """
 
     def __init__(self, model: str | None = None):
-        from anthropic import Anthropic
-        provider = os.environ.get("LLM_PROVIDER", "anthropic")
-        if provider == "openrouter":
-            self._client = Anthropic(
+        self._provider = os.environ.get("LLM_PROVIDER", "anthropic")
+        if self._provider == "openrouter":
+            from openai import OpenAI
+            self._client = OpenAI(
                 api_key=os.environ["OPENROUTER_API_KEY"],
                 base_url=os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+                default_headers={
+                    "HTTP-Referer": "https://github.com/jpcpol/TENSOR-BASED-COGNITIVE-OVERSIGHT-TCO",
+                    "X-Title": "TCO-L2 Research",
+                },
             )
             self._model = model or os.environ.get("LLM_MODEL", "anthropic/claude-sonnet-4-6")
         else:
+            from anthropic import Anthropic
             self._client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
             self._model = model or os.environ.get("LLM_MODEL", "claude-sonnet-4-6")
 
@@ -270,21 +289,147 @@ class QAEvaluator:
             user_content += f"Context: {context}\n"
         user_content += f"\n```\n{artifact_content[:6000]}\n```"  # token guard
 
-        messages = list(_FEW_SHOT_EXAMPLES) + [{"role": "user", "content": user_content}]
-
         try:
-            response = self._client.messages.create(
-                model=self._model,
-                max_tokens=512,
-                system=_SYSTEM_PROMPT,
-                tools=[_OUTPUT_SCHEMA],
-                tool_choice={"type": "tool", "name": "evaluate_artifact"},
-                messages=messages,
-            )
-            for block in response.content:
-                if block.type == "tool_use" and block.name == "evaluate_artifact":
-                    return EvaluationMetrics(**block.input)
+            if self._provider == "openrouter":
+                return self._evaluate_openai(user_content)
+            else:
+                return self._evaluate_anthropic(user_content)
         except Exception as exc:
             logger.warning("QA evaluation failed: %s — using fallback", exc)
-
         return _fallback_metrics()
+
+    def _evaluate_anthropic(self, user_content: str) -> EvaluationMetrics:
+        messages = list(_FEW_SHOT_EXAMPLES) + [{"role": "user", "content": user_content}]
+        response = self._client.messages.create(
+            model=self._model,
+            max_tokens=512,
+            system=_SYSTEM_PROMPT,
+            tools=[_OUTPUT_SCHEMA],
+            tool_choice={"type": "tool", "name": "evaluate_artifact"},
+            messages=messages,
+        )
+        for block in response.content:
+            if block.type == "tool_use" and block.name == "evaluate_artifact":
+                return EvaluationMetrics(**block.input)
+        raise ValueError("No tool_use block in Anthropic response")
+
+    def _evaluate_openai(self, user_content: str) -> EvaluationMetrics:
+        import json as _json
+        import re as _re
+
+        # Build messages in OpenAI format (system + few-shot + user)
+        messages = [{"role": "system", "content": _SYSTEM_PROMPT}]
+        for msg in _FEW_SHOT_EXAMPLES:
+            messages.append(msg)
+        messages.append({"role": "user", "content": user_content})
+
+        response = self._client.chat.completions.create(
+            model=self._model,
+            max_tokens=1024,   # increased — reasoning field can be long
+            tools=[_OUTPUT_SCHEMA_OPENAI],
+            tool_choice={"type": "function", "function": {"name": "evaluate_artifact"}},
+            messages=messages,
+        )
+        for choice in response.choices:
+            if choice.message.tool_calls:
+                for tc in choice.message.tool_calls:
+                    if tc.function.name == "evaluate_artifact":
+                        raw = tc.function.arguments
+                        try:
+                            return EvaluationMetrics(**_json.loads(raw))
+                        except _json.JSONDecodeError:
+                            # Fallback: extract numeric fields via regex
+                            # (handles truncated JSON from reasoning field)
+                            numeric_fields = [
+                                "functional_correctness", "architectural_alignment",
+                                "scalability_projection", "performance_score",
+                                "semantic_maintainability", "semantic_testability",
+                                "semantic_security", "semantic_debt_assessment",
+                                "confidence_self_assessment",
+                            ]
+                            extracted: dict = {}
+                            for field in numeric_fields:
+                                # Match field: number or field: "number" (both formats)
+                                m = _re.search(
+                                    rf'"{field}"\s*:\s*(?:")?([0-9]+\.?[0-9]*)"?', raw
+                                )
+                                if m:
+                                    extracted[field] = float(m.group(1))
+                            # Ensure all required fields are present
+                            if len(extracted) < 9:
+                                # Try harder — look for any float-like pattern after field name
+                                for field in numeric_fields:
+                                    if field not in extracted:
+                                        m = _re.search(
+                                            rf'{field}["\s:]*([0-9\.]+)', raw
+                                        )
+                                        if m:
+                                            extracted[field] = float(m.group(1))
+                            if len(extracted) >= 8:  # At least 8/9 fields
+                                extracted.setdefault("reasoning", "")
+                                extracted.setdefault("confidence_self_assessment", 0.5)
+                                return EvaluationMetrics(**extracted)
+                            raise ValueError(
+                                f"Could not parse tool arguments (got {len(extracted)} fields): {raw[:200]}"
+                            )
+        raise ValueError("No tool_call in OpenAI response")
+
+    def run_variance_test(
+        self,
+        artifact_content: str,
+        artifact_type: ArtifactType = "python_code",
+        context: str = "",
+        n: int = 10,
+    ) -> dict:
+        """
+        DT-024 — Evaluator variance test.
+
+        Runs evaluate() n times on the same artifact to measure LLM score variance.
+        Threshold: σ < 0.05 for all SE dimensions (v1, v2, v3, v9).
+        High σ indicates prompt sensitivity or model instability.
+
+        Returns: {sigma_per_dim, mean_per_dim, max_sigma, passed, runs}
+        """
+        import statistics
+
+        SE_DIMS = [
+            "functional_correctness",    # v1
+            "architectural_alignment",   # v2
+            "scalability_projection",    # v3
+            "performance_score",         # v9
+        ]
+        ALL_DIMS = SE_DIMS + [
+            "semantic_maintainability",
+            "semantic_testability",
+            "semantic_security",
+            "semantic_debt_assessment",
+            "confidence_self_assessment",
+        ]
+
+        runs: list[EvaluationMetrics] = []
+        for _ in range(n):
+            runs.append(self.evaluate(artifact_content, artifact_type, context))
+
+        sigma_per_dim: dict[str, float] = {}
+        mean_per_dim: dict[str, float] = {}
+        for dim in ALL_DIMS:
+            vals = [getattr(r, dim) for r in runs]
+            mean_per_dim[dim] = round(statistics.mean(vals), 4)
+            sigma_per_dim[dim] = round(
+                statistics.stdev(vals) if len(vals) >= 2 else 0.0, 4
+            )
+
+        VARIANCE_THRESHOLD = 0.05
+        se_sigmas = {d: sigma_per_dim[d] for d in SE_DIMS}
+        passed = all(s < VARIANCE_THRESHOLD for s in se_sigmas.values())
+
+        return {
+            "n_runs": n,
+            "sigma_per_dim": sigma_per_dim,
+            "mean_per_dim": mean_per_dim,
+            "se_sigma": se_sigmas,
+            "max_se_sigma": max(se_sigmas.values()),
+            "threshold": VARIANCE_THRESHOLD,
+            "passed": passed,
+            "runs": [r.model_dump() for r in runs],
+        }

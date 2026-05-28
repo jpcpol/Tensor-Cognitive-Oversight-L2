@@ -1,0 +1,448 @@
+{
+  "variance": {
+    "aggregate": {
+      "mean_sigma": {
+        "functional_correctness": 0.0154,
+        "architectural_alignment": 0.0276,
+        "scalability_projection": 0.0256,
+        "performance_score": 0.0299,
+        "semantic_maintainability": 0.0279,
+        "semantic_testability": 0.019,
+        "semantic_security": 0.0249,
+        "semantic_debt_assessment": 0.0326
+      },
+      "max_sigma": {
+        "functional_correctness": 0.0558,
+        "architectural_alignment": 0.0944,
+        "scalability_projection": 0.1051,
+        "performance_score": 0.1297,
+        "semantic_maintainability": 0.1172,
+        "semantic_testability": 0.0333,
+        "semantic_security": 0.1132,
+        "semantic_debt_assessment": 0.1424
+      },
+      "n_artifacts_fail": 1,
+      "n_artifacts_total": 8,
+      "overall_passed": false
+    },
+    "artifact_results": [
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0285,
+          "architectural_alignment": 0.0361,
+          "scalability_projection": 0.0,
+          "performance_score": 0.0333,
+          "semantic_maintainability": 0.019,
+          "semantic_testability": 0.0222,
+          "semantic_security": 0.0338,
+          "semantic_debt_assessment": 0.0282,
+          "confidence_self_assessment": 0.0095
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.741,
+          "architectural_alignment": 0.678,
+          "scalability_projection": 0.7,
+          "performance_score": 0.67,
+          "semantic_maintainability": 0.764,
+          "semantic_testability": 0.674,
+          "semantic_security": 0.471,
+          "semantic_debt_assessment": 0.582,
+          "confidence_self_assessment": 0.907
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0285,
+          "architectural_alignment": 0.0361,
+          "scalability_projection": 0.0,
+          "performance_score": 0.0333
+        },
+        "max_se_sigma": 0.0361,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s1_auth_clean",
+        "scenario": "S1",
+        "fault_present": false
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0264,
+          "architectural_alignment": 0.0497,
+          "scalability_projection": 0.0242,
+          "performance_score": 0.0242,
+          "semantic_maintainability": 0.035,
+          "semantic_testability": 0.0333,
+          "semantic_security": 0.0052,
+          "semantic_debt_assessment": 0.0242,
+          "confidence_self_assessment": 0.0052
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.375,
+          "architectural_alignment": 0.405,
+          "scalability_projection": 0.585,
+          "performance_score": 0.535,
+          "semantic_maintainability": 0.43,
+          "semantic_testability": 0.5,
+          "semantic_security": 0.034,
+          "semantic_debt_assessment": 0.135,
+          "confidence_self_assessment": 0.966
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0264,
+          "architectural_alignment": 0.0497,
+          "scalability_projection": 0.0242,
+          "performance_score": 0.0242
+        },
+        "max_se_sigma": 0.0497,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s1_auth_faulty",
+        "scenario": "S1",
+        "fault_present": true
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0032,
+          "architectural_alignment": 0.0095,
+          "scalability_projection": 0.0258,
+          "performance_score": 0.0195,
+          "semantic_maintainability": 0.0092,
+          "semantic_testability": 0.0132,
+          "semantic_security": 0.0145,
+          "semantic_debt_assessment": 0.0151,
+          "confidence_self_assessment": 0.0
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.879,
+          "architectural_alignment": 0.823,
+          "scalability_projection": 0.87,
+          "performance_score": 0.887,
+          "semantic_maintainability": 0.848,
+          "semantic_testability": 0.912,
+          "semantic_security": 0.871,
+          "semantic_debt_assessment": 0.845,
+          "confidence_self_assessment": 0.91
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0032,
+          "architectural_alignment": 0.0095,
+          "scalability_projection": 0.0258,
+          "performance_score": 0.0195
+        },
+        "max_se_sigma": 0.0258,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s3_processor_k0",
+        "scenario": "S3",
+        "fault_present": null
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0,
+          "architectural_alignment": 0.0,
+          "scalability_projection": 0.0211,
+          "performance_score": 0.0,
+          "semantic_maintainability": 0.007,
+          "semantic_testability": 0.0189,
+          "semantic_security": 0.0,
+          "semantic_debt_assessment": 0.0,
+          "confidence_self_assessment": 0.0032
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.78,
+          "architectural_alignment": 0.72,
+          "scalability_projection": 0.79,
+          "performance_score": 0.82,
+          "semantic_maintainability": 0.746,
+          "semantic_testability": 0.833,
+          "semantic_security": 0.78,
+          "semantic_debt_assessment": 0.7,
+          "confidence_self_assessment": 0.871
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0,
+          "architectural_alignment": 0.0,
+          "scalability_projection": 0.0211,
+          "performance_score": 0.0
+        },
+        "max_se_sigma": 0.0211,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s3_processor_k1",
+        "scenario": "S3",
+        "fault_present": null
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0,
+          "architectural_alignment": 0.0313,
+          "scalability_projection": 0.0126,
+          "performance_score": 0.017,
+          "semantic_maintainability": 0.0292,
+          "semantic_testability": 0.0189,
+          "semantic_security": 0.0221,
+          "semantic_debt_assessment": 0.0306,
+          "confidence_self_assessment": 0.0149
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.72,
+          "architectural_alignment": 0.523,
+          "scalability_projection": 0.756,
+          "performance_score": 0.79,
+          "semantic_maintainability": 0.479,
+          "semantic_testability": 0.633,
+          "semantic_security": 0.713,
+          "semantic_debt_assessment": 0.424,
+          "confidence_self_assessment": 0.863
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0,
+          "architectural_alignment": 0.0313,
+          "scalability_projection": 0.0126,
+          "performance_score": 0.017
+        },
+        "max_se_sigma": 0.0313,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s3_processor_k2",
+        "scenario": "S3",
+        "fault_present": null
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0558,
+          "architectural_alignment": 0.0944,
+          "scalability_projection": 0.1051,
+          "performance_score": 0.1297,
+          "semantic_maintainability": 0.1172,
+          "semantic_testability": 0.0316,
+          "semantic_security": 0.1132,
+          "semantic_debt_assessment": 0.1424,
+          "confidence_self_assessment": 0.4202
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.57,
+          "architectural_alignment": 0.365,
+          "scalability_projection": 0.652,
+          "performance_score": 0.687,
+          "semantic_maintainability": 0.331,
+          "semantic_testability": 0.51,
+          "semantic_security": 0.663,
+          "semantic_debt_assessment": 0.294,
+          "confidence_self_assessment": 0.609
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0558,
+          "architectural_alignment": 0.0944,
+          "scalability_projection": 0.1051,
+          "performance_score": 0.1297
+        },
+        "max_se_sigma": 0.1297,
+        "threshold": 0.05,
+        "passed": false,
+        "artifact_id": "s3_processor_k3",
+        "scenario": "S3",
+        "fault_present": null
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0,
+          "architectural_alignment": 0.0,
+          "scalability_projection": 0.0,
+          "performance_score": 0.0,
+          "semantic_maintainability": 0.0,
+          "semantic_testability": 0.0,
+          "semantic_security": 0.0,
+          "semantic_debt_assessment": 0.0,
+          "confidence_self_assessment": 0.0
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.5,
+          "architectural_alignment": 0.5,
+          "scalability_projection": 0.5,
+          "performance_score": 0.5,
+          "semantic_maintainability": 0.5,
+          "semantic_testability": 0.5,
+          "semantic_security": 0.5,
+          "semantic_debt_assessment": 0.5,
+          "confidence_self_assessment": 0.0
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0,
+          "architectural_alignment": 0.0,
+          "scalability_projection": 0.0,
+          "performance_score": 0.0
+        },
+        "max_se_sigma": 0.0,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s5_auth_security_agent",
+        "scenario": "S5",
+        "fault_present": null
+      },
+      {
+        "n_runs": 10,
+        "sigma_per_dim": {
+          "functional_correctness": 0.0095,
+          "architectural_alignment": 0.0,
+          "scalability_projection": 0.0158,
+          "performance_score": 0.0158,
+          "semantic_maintainability": 0.0063,
+          "semantic_testability": 0.0135,
+          "semantic_security": 0.0103,
+          "semantic_debt_assessment": 0.0207,
+          "confidence_self_assessment": 0.0063
+        },
+        "mean_per_dim": {
+          "functional_correctness": 0.623,
+          "architectural_alignment": 0.55,
+          "scalability_projection": 0.605,
+          "performance_score": 0.655,
+          "semantic_maintainability": 0.718,
+          "semantic_testability": 0.814,
+          "semantic_security": 0.062,
+          "semantic_debt_assessment": 0.214,
+          "confidence_self_assessment": 0.928
+        },
+        "se_sigma": {
+          "functional_correctness": 0.0095,
+          "architectural_alignment": 0.0,
+          "scalability_projection": 0.0158,
+          "performance_score": 0.0158
+        },
+        "max_se_sigma": 0.0158,
+        "threshold": 0.05,
+        "passed": true,
+        "artifact_id": "s5_auth_code_agent",
+        "scenario": "S5",
+        "fault_present": null
+      }
+    ]
+  },
+  "entropy": {
+    "entropy_per_dim": {
+      "functional_correctness": 1.8344,
+      "architectural_alignment": 1.7481,
+      "scalability_projection": 1.6094,
+      "performance_score": 1.3592,
+      "semantic_maintainability": 1.5571,
+      "semantic_testability": 1.4708,
+      "semantic_security": 1.7481,
+      "semantic_debt_assessment": 1.6957
+    },
+    "entropy_alert_threshold": 0.8,
+    "high_entropy_dims": [
+      "functional_correctness",
+      "architectural_alignment",
+      "scalability_projection",
+      "performance_score",
+      "semantic_maintainability",
+      "semantic_testability",
+      "semantic_security",
+      "semantic_debt_assessment"
+    ],
+    "scores": {
+      "functional_correctness": [
+        0.72,
+        0.45,
+        0.9,
+        0.25,
+        0.88,
+        0.78,
+        0.72,
+        0.5,
+        0.5,
+        0.62
+      ],
+      "architectural_alignment": [
+        0.65,
+        0.4,
+        0.92,
+        0.1,
+        0.85,
+        0.72,
+        0.55,
+        0.5,
+        0.5,
+        0.55
+      ],
+      "scalability_projection": [
+        0.7,
+        0.6,
+        0.8,
+        0.2,
+        0.9,
+        0.8,
+        0.75,
+        0.5,
+        0.5,
+        0.6
+      ],
+      "performance_score": [
+        0.68,
+        0.55,
+        0.5,
+        0.5,
+        0.9,
+        0.82,
+        0.78,
+        0.5,
+        0.5,
+        0.65
+      ],
+      "semantic_maintainability": [
+        0.75,
+        0.45,
+        0.88,
+        0.3,
+        0.85,
+        0.75,
+        0.48,
+        0.5,
+        0.5,
+        0.72
+      ],
+      "semantic_testability": [
+        0.65,
+        0.5,
+        0.5,
+        0.2,
+        0.92,
+        0.85,
+        0.65,
+        0.5,
+        0.5,
+        0.82
+      ],
+      "semantic_security": [
+        0.45,
+        0.04,
+        0.7,
+        0.65,
+        0.88,
+        0.78,
+        0.72,
+        0.5,
+        0.5,
+        0.07
+      ],
+      "semantic_debt_assessment": [
+        0.6,
+        0.15,
+        0.85,
+        0.1,
+        0.87,
+        0.7,
+        0.42,
+        0.5,
+        0.5,
+        0.22
+      ]
+    }
+  }
+}

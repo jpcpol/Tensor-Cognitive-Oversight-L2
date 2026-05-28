@@ -176,6 +176,10 @@ class PIQLLMJudge:
                 api_key=os.environ["OPENROUTER_API_KEY"],
                 base_url=os.environ.get("OPENROUTER_BASE_URL",
                                         "https://openrouter.ai/api/v1"),
+                default_headers={
+                    "HTTP-Referer": "https://github.com/jpcpol/TENSOR-BASED-COGNITIVE-OVERSIGHT-TCO",
+                    "X-Title": "TCO-L2 Research",
+                },
             )
             self._model = model or os.environ.get("LLM_MODEL",
                                                    "anthropic/claude-sonnet-4-6")

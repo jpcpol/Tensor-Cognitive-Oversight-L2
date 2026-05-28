@@ -339,7 +339,7 @@ If you use or reference this work:
                   Human Orchestration of AI-Driven Software Systems},
   author       = {Chancay, Juan Pablo},
   year         = {2026},
-  howpublished = {GitHub preprint. \url{https://github.com/jpcpol/TENSOR-BASED-COGNITIVE-OVERSIGHT-TCO}},
+  howpublished = {GitHub preprint. \url{https://github.com/jpcpol/TENSOR-COGNITIVE-OVERSIGHT-L2}},
   note         = {Working paper v3.0. CC BY-NC 4.0.}
 }
 ```
