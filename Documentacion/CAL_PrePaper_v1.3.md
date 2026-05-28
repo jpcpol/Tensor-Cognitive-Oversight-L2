@@ -4,7 +4,7 @@
 Aural Syncro Research Lab  
 jpcpol@gmail.com
 
-**Version:** 1.2 — May 2026  
+**Version:** 1.3 — May 2026  
 **Status:** Pre-print / Vision Paper — arXiv submission candidate  
 **License:** CC BY-NC 4.0
 
