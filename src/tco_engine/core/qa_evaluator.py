@@ -246,10 +246,18 @@ class QAEvaluator:
     Uses few-shot prompting and tool_use structured output via the Anthropic API.
     """
 
-    def __init__(self, model: str = "claude-sonnet-4-6"):
+    def __init__(self, model: str | None = None):
         from anthropic import Anthropic
-        self._client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
-        self._model = model
+        provider = os.environ.get("LLM_PROVIDER", "anthropic")
+        if provider == "openrouter":
+            self._client = Anthropic(
+                api_key=os.environ["OPENROUTER_API_KEY"],
+                base_url=os.environ.get("OPENROUTER_BASE_URL", "https://openrouter.ai/api/v1"),
+            )
+            self._model = model or os.environ.get("LLM_MODEL", "anthropic/claude-sonnet-4-6")
+        else:
+            self._client = Anthropic(api_key=os.environ["ANTHROPIC_API_KEY"])
+            self._model = model or os.environ.get("LLM_MODEL", "claude-sonnet-4-6")
 
     def evaluate(
         self,
