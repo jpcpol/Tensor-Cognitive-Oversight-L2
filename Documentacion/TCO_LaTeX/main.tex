@@ -356,6 +356,19 @@ policy flows downward from the human through layer 6 back to layer 1.
 properties; higher values indicate \textit{worse} quality. The vectorizer normalises
 these so that $1.0$ always corresponds to the best quality state.
 
+\medskip
+\noindent \textbf{Approximately orthogonal supervisory dimensions.}
+The 11 dimensions are \textit{supervisoriamente distinguishable}: each captures a
+distinct oversight concern that provides non-redundant decision-relevant signal to the
+orchestrator, even when dimensions partially correlate empirically
+(e.g.\ $v_7$ maintainability $\leftrightarrow$ $v_8$ technical debt).
+An artifact may simultaneously have high $v_1$ (functional correctness) and low $v_7$
+(maintainability) --- this is diagnostic information, not contradiction.
+Strict statistical independence is not claimed; supervisory distinguishability is
+\citep[cf.][for the analogous argument in MQM translation evaluation]{lommel2014}.
+Pre-pilot calibration (\S\ref{sec:calibration}) reports pairwise Spearman~$\rho$ between
+static-analysis dimensions; any pair with $\rho > 0.90$ receives explicit justification.
+
 \subsection{The Cognitive Tensor}
 
 \begin{equation}

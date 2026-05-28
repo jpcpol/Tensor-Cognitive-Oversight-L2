@@ -74,12 +74,23 @@ class DimensionResult:
 
 
 @dataclass
+class CorrelationPair:
+    """Pairwise Spearman ρ between two quality dimensions (DT-025)."""
+    dim_a: str
+    dim_b: str
+    spearman_rho: float
+    note: str   # "high_correlation" if ρ > 0.90, else ""
+
+
+@dataclass
 class CalibrationReport:
     timestamp: str
     n_artifacts: int
     results: list[DimensionResult]
     overall_verdict: str  # GO | NO-GO
     failing_dimensions: list[str]
+    # DT-025: inter-dimension correlation matrix (static dims only — ground truth)
+    top_correlated_pairs: list[CorrelationPair] = None   # top-3 pairs by |ρ|
 
 
 # ── Statistical helpers ────────────────────────────────────────────────────────
@@ -166,6 +177,54 @@ def _extract_llm_scores(code: str, artifact_type: str, context: str) -> dict[str
     }
 
 
+# ── Inter-dimension correlation (DT-025) ──────────────────────────────────────
+
+# Static dimensions available in records (ground truth, deterministic)
+_STATIC_DIMS = {
+    "v4_security":     "bandit_security_inv",
+    "v6_testability":  "radon_testability",
+    "v7_maintainability": "radon_maintainability",
+    "v8_technical_debt": "radon_debt_inv",
+}
+
+HIGH_CORRELATION_THRESHOLD = 0.90  # pairs above this warrant justification or fusion
+
+
+def compute_interdim_correlation(records: list[dict]) -> list[CorrelationPair]:
+    """
+    Compute pairwise Spearman ρ between all static quality dimensions.
+
+    Used to validate the ~orthogonal supervisory dimensions claim (DT-025):
+    dimensions may correlate empirically, but must remain supervisoriamente
+    distinguishable. Any pair with ρ > 0.90 warrants explicit justification
+    for keeping them separate in V.
+
+    Returns the top-3 pairs by |ρ| for inclusion in the calibration report
+    and Section 7.6.1 of the paper.
+    """
+    dim_keys = list(_STATIC_DIMS.keys())
+    pairs: list[CorrelationPair] = []
+
+    for i in range(len(dim_keys)):
+        for j in range(i + 1, len(dim_keys)):
+            da, db = dim_keys[i], dim_keys[j]
+            fa, fb = _STATIC_DIMS[da], _STATIC_DIMS[db]
+            vals_a = [r[fa] for r in records if fa in r and fb in r]
+            vals_b = [r[fb] for r in records if fa in r and fb in r]
+            if len(vals_a) < 3:
+                continue
+            rho = _spearman_rho(vals_a, vals_b)
+            note = "high_correlation - justify or fuse" if abs(rho) > HIGH_CORRELATION_THRESHOLD else ""
+            pairs.append(CorrelationPair(
+                dim_a=da, dim_b=db,
+                spearman_rho=round(rho, 4),
+                note=note,
+            ))
+
+    pairs.sort(key=lambda p: abs(p.spearman_rho), reverse=True)
+    return pairs[:3]  # top-3 by |ρ|
+
+
 # ── Main calibration routine ───────────────────────────────────────────────────
 
 def run_calibration(
@@ -238,12 +297,16 @@ def run_calibration(
 
     overall = "NO-GO" if failing else "GO"
 
+    # DT-025: inter-dimension correlation matrix
+    top_pairs = compute_interdim_correlation(records)
+
     report = CalibrationReport(
         timestamp=datetime.now(timezone.utc).isoformat(),
         n_artifacts=len(records),
         results=results,
         overall_verdict=overall,
         failing_dimensions=failing,
+        top_correlated_pairs=top_pairs,
     )
 
     _print_summary(report)
@@ -290,6 +353,21 @@ def _print_summary(report: CalibrationReport) -> None:
     if report.failing_dimensions:
         print(f"  Failing: {', '.join(report.failing_dimensions)}")
         print("  Action: revise QA agent prompt for failing dimensions, re-run calibration.")
+
+    # DT-025: inter-dimension correlation report
+    if report.top_correlated_pairs:
+        print()
+        print("INTER-DIMENSION CORRELATION (top-3 static pairs, ~orthogonal check):")
+        for p in report.top_correlated_pairs:
+            flag = "  *** JUSTIFY OR FUSE ***" if p.note else ""
+            print(f"  {p.dim_a} <-> {p.dim_b}:  rho={p.spearman_rho:+.3f}{flag}")
+        high = [p for p in report.top_correlated_pairs if p.note]
+        if high:
+            print("  Note: pairs with rho > 0.90 require explicit justification")
+            print("  in Section 4.2.3 P2 that supervisory distinguishability")
+            print("  is maintained despite empirical correlation.")
+        else:
+            print("  All pairs below 0.90 -- ~orthogonal claim defensible.")
     print("=" * 60 + "\n")
 
 
