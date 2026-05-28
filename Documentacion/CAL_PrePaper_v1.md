@@ -12,7 +12,7 @@ jpcpol@gmail.com
 
 ## Abstract
 
-As AI systems generate outputs at scales that exceed human supervisory capacity, the fundamental challenge of AI governance shifts from generation to comprehension. We propose that this challenge cannot be solved by increasing human review bandwidth or improving artifact-level tooling, because both responses operate at the wrong level of abstraction. We introduce the **Cognitive Abstraction Layer (CAL) architecture**: a five-level hierarchy spanning raw token streams (L0) to autonomous meta-inference on compressed semantic volumes (L4). The core invariant of the architecture is *semantic conservation*: each layer must compress state while preserving sufficient causal and decisional structure for effective reasoning at the layer above. We formalize this requirement through the concept of **Semantic Information Density (SID)** — the quantity of decision-relevant cognitive structure preserved per unit of representation, as distinct from raw token count. L1 is instantiated by existing large language model inference, but is not formally structured as a governance layer; L2 is formalized and empirically validated by the companion paper TCO-L2 [Chancay 2026]; L3 and L4 represent open research directions with defined formal requirements and testable hypotheses. The principal claim of this paper is that scalable AI governance depends not on the size of the context window, but on the quality of semantic abstraction at each layer boundary.
+**Thesis: scalable cognition requires hierarchical semantic compression.** As AI systems generate outputs at scales that exceed human supervisory capacity, the fundamental challenge of AI governance shifts from generation to comprehension. We propose that this challenge cannot be solved by increasing human review bandwidth or improving artifact-level tooling, because both responses operate at the wrong level of abstraction. We introduce the **Cognitive Abstraction Layer (CAL) architecture**: a five-level hierarchy spanning raw token streams (L0) to autonomous meta-inference on compressed semantic volumes (L4). The core invariant of the architecture is *semantic conservation*: each layer must compress state while preserving sufficient causal and decisional structure for effective reasoning at the layer above. We formalize this requirement through the concept of **Semantic Information Density (SID)** — the quantity of decision-relevant cognitive structure preserved per unit of representation, as distinct from raw token count. The central claim is that the quality of AI governance scales with SID at each layer boundary, not with context window size — a separation of computational capacity from abstraction quality that current architectures conflate. L1 is instantiated by existing large language model inference, but is not formally structured as a governance layer; L2 is formalized and empirically validated by the companion paper TCO-L2 [Chancay 2026]; L3 and L4 represent open research directions with defined formal requirements and testable hypotheses.
 
 **Keywords:** cognitive load, AI governance, semantic compression, tensor representation, hierarchical inference, human-AI collaboration, Semantic Information Density, Natural Cognitive Frontier
 
@@ -29,6 +29,20 @@ This paper proposes a third response: a hierarchical architecture of semantic ab
 The key question the architecture poses is not "how much can humans supervise?" but "what is the minimum semantic representation that preserves the structure required for effective governance at each level?" This question is formalized through the concept of **Semantic Information Density (SID)**: the quantity of decision-relevant cognitive structure preserved per unit of representation. The thesis of the CAL architecture is that maximizing SID at each layer boundary — not expanding context windows — is the path to scalable AI governance.
 
 The current paper is a research agenda. We do not report new experimental results for L3 and L4. We provide: (a) formal definitions of each layer and the properties required at each boundary, (b) a summary of the L2 empirical anchor (TCO-L2), (c) concrete open problems with testable hypotheses for L3 and L4, and (d) the SID metric as a unifying measurement framework. The goal is to establish the theoretical framing and priority of the full architecture before individual layer papers are submitted.
+
+### 1.1 Scope and Non-Goals
+
+CAL is a research architecture for AI pipeline governance in multi-agent software development contexts. It is not:
+
+- **A theory of general cognition or AGI.** The word "cognitive" in CAL refers to the supervisory operations that agents and humans perform over pipeline state, not to cognition in the cognitive science or AGI sense. CAL makes no claims about how biological or artificial general intelligence operates.
+
+- **A proposal to eliminate human governance.** L2 (TCO-L2) places the human orchestrator at the center of the architecture. L3 and L4 automate inference for decisions where human working memory is the bottleneck — they do not eliminate human accountability, which remains anchored at L2.
+
+- **A general inference efficiency claim.** The L4 Efficiency Hypothesis applies specifically to governance inference over semantically compressed pipeline state. It does not claim that hierarchical abstraction improves efficiency for arbitrary tasks — especially creative, open-ended, or low-structure domains where semantic compression may destroy rather than preserve relevant structure.
+
+- **A complete, deployed system.** L3 and L4 have defined formal requirements and open problems, not implementations. Sections 5 and 6 describe what must be built and what must be proven, not what exists.
+
+The scope is: multi-agent AI pipelines with measurable quality dimensions (as defined by φ in Section 4.1) and known pipeline structure. Extension to other domains requires domain-specific instantiation of φ and fresh validation of the L1→L2 interface in that domain.
 
 ---
 
@@ -156,14 +170,28 @@ For V to be semantically conservative with respect to L4 inference, C must satis
 
 4. **Tractability:** C must be computable for continuous pipelines. The size of V must not grow linearly with n for large n.
 
-### 5.3 Open Research Questions at L3
+### 5.3 Tractability and Mitigation Strategies for Combinatorial Explosion
+
+The composition operator C faces a combinatorial growth risk that must be treated as a primary design constraint, not a secondary concern. A naive tensor product C = T⁽¹⁾ ⊗ T⁽²⁾ ⊗ ... ⊗ T⁽ⁿ⁾ grows exponentially in dimensionality with n, directly violating the tractability requirement (Property 4 in Section 5.2) and negating the L4 Efficiency Hypothesis. Four mitigation strategies are candidates for the L3 research agenda:
+
+1. **Sparse tensor representation.** Entries in V corresponding to agent-stage-dimension combinations that never co-occur in practice are structurally zero. Sparse formats (COO, CSR, block-sparse) reduce storage and computation to O(k) in the number of nonzero entries k. If pipeline interactions are sparse — which is empirically likely given the bounded number of agents and quality dimensions — k grows sub-linearly with n.
+
+2. **Low-rank approximation.** Tucker and CP decompositions [Kolda & Bader 2009] approximate high-dimensional tensors as products of smaller factor matrices. If the effective rank of V is bounded by the number of distinct governance-relevant pipeline patterns (rather than by n), low-rank V is tractable. This is plausible if pipelines exhibit a small set of recurring failure modes — a testable empirical hypothesis.
+
+3. **Selective retention (dynamic forgetting).** Not all past T⁽ˢ⁾ contribute equally to current governance. C can implement a selective update rule — analogous to the gating mechanism in SSMs and LSTMs — that discards low-SID sessions and retains high-SID ones. This keeps the effective n bounded at any point in time.
+
+4. **Manifold projection.** If the space of governance-relevant pipeline states lies on a low-dimensional manifold embedded in the full tensor space, V can be projected onto this manifold with bounded information loss. The **governance manifold hypothesis** — that the reachable space of pipeline quality states is low-dimensional — is the key assumption that would make manifold projection viable. Testing this hypothesis on the TCO-L2 corpus is a natural next step.
+
+The combinatorial explosion risk does not invalidate L3; it defines the primary engineering constraint. Any candidate composition operator C must be evaluated against these four mitigation dimensions before its tractability can be claimed.
+
+### 5.4 Open Research Questions at L3
 
 - **Algebraic structure of C:** does C belong to a known algebraic family (tensor product, contraction, concatenation along a new axis, low-rank approximation)? What are the guarantees of each candidate?
 - **Attractor states:** does V exhibit stable configurations that recur across sessions regardless of initial conditions? If so, these attractors may represent semantic invariants of the pipeline — structural patterns in agent behavior that persist across context changes.
 - **Phase transitions:** does V exhibit discontinuous changes in global state (semantic regime shifts) analogous to phase transitions in physical systems? Detecting the precursors of these transitions is a key L4 use case.
 - **Scalability:** how does the effective rank of V grow with n? Polynomial growth would suggest that SID(L2→L3) decreases with pipeline scale — a critical failure mode to characterize.
 
-### 5.4 Connections to Existing Research
+### 5.5 Connections to Existing Research
 
 **State Space Models.** SSMs such as Mamba [Gu & Dao 2023] demonstrate that temporal sequences can be compressed into fixed-size state representations with sub-quadratic complexity while preserving long-range dependencies via selective state spaces. The composition operator C in L3 is a semantic analog of the SSM state transition: it must compress temporal state while preserving structure. The key difference is that SSMs operate on raw token sequences; C operates on semantically structured quality tensors. Whether the selectivity mechanism of SSMs extends to the structured inputs of L3 is an open question.
 
@@ -213,17 +241,27 @@ Empirical testing of this hypothesis requires: (a) a concrete definition of C an
 
 The CAL architecture requires a metric that can be applied at every layer boundary to assess whether the abstraction is semantically conservative. Without such a metric, the claim that each layer "preserves decision-relevant structure" is unfalsifiable. We propose **Semantic Information Density (SID)** for this purpose.
 
-### 7.1 Informal Definition
+### 7.1 Formal Definition (Preliminary)
 
-SID at layer boundary Lₖ → Lₖ₊₁ is the fraction of decision-relevant cognitive structure in Lₖ that is preserved in the compressed representation at Lₖ₊₁:
+Let R_k denote the representation at layer Lₖ, and let D be the set of governance decisions relevant to the pipeline (e.g., deploy / halt / escalate / re-orchestrate). Define the **decision-relevant information content** of R_k as the mutual information between R_k and D:
 
 ```
-SID(Lₖ → Lₖ₊₁) = preserved_decision_structure / original_decision_structure ∈ [0, 1]
+I_decision(R_k) = H(D) - H(D | R_k)  =  I(D ; R_k)
 ```
 
-A SID of 1.0 means the compression is lossless with respect to governance decisions. A SID below threshold θ means the abstraction has destroyed governance-relevant information.
+i.e., the reduction in uncertainty about governance decisions D given the representation R_k. SID at a layer boundary is then:
 
-SID is conceptually distinct from information-theoretic entropy: it measures decision-relevant structure, not information content in the Shannon sense. A highly entropic representation can have low SID if its entropy is dominated by noise irrelevant to governance.
+```
+SID(Lₖ → Lₖ₊₁) = I_decision(R_{k+1}) / I_decision(R_k)  ∈  [0, 1]
+```
+
+A SID of 1.0 means R_{k+1} is as informative as R_k for governance decisions. A SID below threshold θ means that compression has destroyed governance-relevant information that cannot be recovered at higher layers.
+
+SID differs from Shannon entropy in that it is conditioned on the governance decision set D, not on information content in the abstract. A highly entropic representation can have low SID if its entropy is dominated by noise irrelevant to D.
+
+**Causal structure.** A critical dimension of SID not captured by mutual information alone is causal structure preservation. We say a representation R_k preserves the causal structure of its source if, for any pair of quality dimensions (dᵢ, dⱼ) where dᵢ causally produces dⱼ in the underlying pipeline, this relationship is recoverable from R_k. Using Pearl's do-calculus notation, the conditional interventional distribution P(dⱼ | do(dᵢ)) must remain estimable from R_k. A boundary where this fails may still have acceptable contemporaneous SID while producing systematic errors in drift prediction and temporal governance — a silent failure mode.
+
+**The central open problem.** The fundamental difficulty in operationalizing SID is measuring I_decision. The governance decision set D is not fixed: it depends on the class of pipeline tasks, the organizational context, and the severity calibration used. At L2, the TCO-L2 experiment provides an empirical proxy via governance accuracy α₂ on a finite set of labeled scenarios. At L3 and L4, there is currently no established methodology for measuring I_decision without a human reference signal. Defining I_decision rigorously — in a way that is independent of the specific evaluator and generalizes across pipeline types — is the primary mathematical open problem of the SID framework.
 
 ### 7.2 Operationalization at L2: The TCO-L2 Experiment
 
