@@ -37,6 +37,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Implementado |
 | DT-026 | Experimento — 4 proxies NCF operacionalizados en infra | Importante | Implementado |
 | DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Implementado |
+| DT-028 | Plataforma web experimento — researchlab.aural-syncro.com.ar/cal | Importante | Pendiente |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
@@ -540,5 +541,84 @@ Cambios necesarios:
 
 ---
 
-*Última actualización: 20 Mayo 2026*  
-*Próxima revisión: al completar Semana 3 (pipeline LangGraph + validación φ en corpus)*
+---
+
+## CAL RESEARCH PLATFORM — Infraestructura compartida para L2, L3, L4
+
+### DT-028 · Plataforma web experimento — researchlab.aural-syncro.com.ar/cal
+
+**Componente:** Research Lab (`c:\Users\Usuario\Documents\Aural Syncro\Research-Lab`) — nuevas rutas `/cal`  
+**Estado:** Pendiente — iniciar post-pilot n=4 (Semana 6)  
+**Prioridad:** Importante — habilita n=40 sin necesidad de coordinación presencial
+
+**Propósito dual:**
+1. **TCO-L2 (inmediato):** Plataforma de reclutamiento y ejecución del experimento RCT n=40
+2. **CAL L3/L4 (futuro):** Infraestructura reutilizable para experimentos de layers futuros — cada layer agrega su propio sub-path (`/cal/l3`, `/cal/l4`) con la misma base de registro, email y datos de participantes
+
+**Arquitectura:**
+
+```
+researchlab.aural-syncro.com.ar/cal        ← TCO-L2
+researchlab.aural-syncro.com.ar/cal/l3     ← futuro L3
+researchlab.aural-syncro.com.ar/cal/l4     ← futuro L4
+
+Research Lab (UX layer)           TCO Engine (backend experimento)
+  ├── Landing /cal                  ├── /vector, /tensor, /inference
+  ├── Registro + consentimiento     ├── /policy/inject
+  ├── Email confirmación alta       └── NCF proxies + PIQ scoring
+  ├── Warm-up cognitivo (S0)
+  ├── Experiment runner (T1–T4 × S1–S5)
+  ├── NASA-TLX form (post-task)
+  ├── Correction log UI
+  └── Thank you + email resultados
+```
+
+**Lo que Research Lab ya provee (no construir desde cero):**
+- Auth JWT + registro de usuarios (`auth.py`, `register.py`)
+- PostgreSQL 15 + TimescaleDB — persistencia de sesiones y resultados
+- Hosting desplegado: Cloudflare Tunnel + Docker + red `sspa_infra`
+- Frontend SPA vanilla JS — extendible con nuevas páginas `/cal/*`
+
+**Nuevos componentes a desarrollar:**
+
+| Componente | Ubicación | Semana |
+|-----------|-----------|--------|
+| Schema DB: `cal_participants`, `cal_sessions`, `cal_task_results` | Research Lab / migrations | 1 |
+| Rutas FastAPI: `/cal/register`, `/cal/session`, `/cal/results` | Research Lab `app/routers/cal.py` | 1 |
+| Email: confirmación alta + aviso resultados disponibles | Research Lab email service | 1 |
+| Landing `/cal` — pre-print, hipótesis H1–H5, datos clave L2 | Research Lab `static/cal/` | 1 |
+| Registro participante: datos personales + nivel SE + grado + consentimiento | Research Lab frontend | 1 |
+| Cognitive prep + warm-up S0 UI | Research Lab frontend | 2 |
+| Experiment runner — control (ControlGroupViewer) y experimental (TCO Dashboard) | Research Lab frontend + TCO API | 2–3 |
+| NASA-TLX form digital (post-task) | Research Lab frontend | 2 |
+| Correction log UI con fault_category | Research Lab frontend | 2 |
+| Admin: export CSV/JSON resultados para análisis estadístico | Research Lab backend | 3 |
+
+**Registro participante — campos requeridos:**
+- Nombre completo, email, país
+- Años de experiencia en code review (threshold ≥ 2)
+- Nivel educativo (universitario / posgrado / otro) + institución (opcional)
+- Lenguajes/ecosistemas principales
+- ¿Ha oído hablar de TCO antes? (disqualifier: sí)
+- Consentimiento informado (DT-014)
+- Disponibilidad para sesión de 3h
+
+**Randomización:** al confirmar email → asignación automática control/experimental estratificada por años de experiencia (Junior 2–4 / Mid 5–9 / Senior 10+).
+
+**Emails del flujo:**
+1. **Alta:** confirmación de registro + instrucciones de preparación técnica + link a la sesión
+2. **Cumplimiento post-sesión:** agradecimiento + aviso de que los resultados estarán disponibles en `researchlab.aural-syncro.com.ar/cal/resultados` al finalizar el experimento
+
+**Estimación total:** 3 semanas de trabajo post-pilot  
+**Dependencia:** Pilot n=4 presencial (Semana 5) — valida el protocolo antes de abrir reclutamiento público
+
+**Reutilización para L3/L4:**
+Los módulos `cal_participants`, email service, y el experiment runner son agnósticos al layer. Para L3, solo se necesita:
+1. Nuevos escenarios L3 (tensor volumes, cross-session)
+2. Nueva UI de presentación (diferente abstracción)
+3. Sub-path `/cal/l3` con su propio flujo — reutilizando registro, email y persistencia
+
+---
+
+*Última actualización: 28 Mayo 2026*  
+*Próxima revisión: post-pilot Semana 5 — iniciar DT-028*
