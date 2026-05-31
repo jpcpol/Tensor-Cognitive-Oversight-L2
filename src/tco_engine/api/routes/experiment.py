@@ -22,14 +22,40 @@ from tco_engine.core.auth import (
     hash_password, verify_password,
 )
 from tco_engine.core.email_service import send_invitation_email, send_welcome_email
+from tco_engine.core.ncf_compute import SCENARIO_CATEGORY, SEVERITY_SCALE, compute_ncf_for_session
 from tco_engine.db.database import get_db
-from tco_engine.db.models import CalInvitation, CalParticipant, CalSession
+from tco_engine.db.models import (
+    CalInteractionEvent, CalInvitation, CalNCFProxy, CalParticipant,
+    CalPolicyIntent, CalSession, CalTaskResult, CalTLXMeasurement,
+)
 from tco_engine.schemas.cal import (
     AdminParticipant, ConsentRequest, GroupOverrideRequest, InviteRequest,
-    LoginRequest, MeResponse, RegisterRequest, SessionSummary, TokenResponse,
+    LoginRequest, MeResponse, PolicyInjectRequest, RegisterRequest,
+    ResultsResponse, ScenarioArtifact, SessionSummary, StartSessionRequest,
+    TaskResultOut, TaskSubmitRequest, TLXRequest, TokenResponse,
 )
 
 router = APIRouter()
+
+
+def _artifact_tab(artifact_type: str) -> str:
+    t = (artifact_type or "").lower()
+    if "yaml" in t:
+        return "yaml"
+    if "ci_cd" in t or "cicd" in t or "ci/cd" in t:
+        return "ci_cd"
+    if "arch" in t:
+        return "architecture"
+    return "code"
+
+
+def _owned_session(db: Session, session_id: str, participant: CalParticipant) -> CalSession:
+    session = db.query(CalSession).filter(CalSession.id == session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.participant_id != participant.id and participant.role != "admin":
+        raise HTTPException(status_code=403, detail="Not your session")
+    return session
 
 
 # ─── Auth / registration ─────────────────────────────────────────────────────
@@ -227,3 +253,198 @@ def admin_invite(
         "invitation_status": invitation.status,
         "email_sent": sent,
     }
+
+
+# ─── Session runner ───────────────────────────────────────────────────────────
+
+@router.get("/scenario/{scenario_id}", response_model=list[ScenarioArtifact])
+def get_scenario(
+    scenario_id: str,
+    cycle_k: int = 0,
+    _participant: CalParticipant = Depends(get_current_participant),
+):
+    try:
+        from pipeline.scenarios import get_scenario as load_scenario
+        mod = load_scenario(scenario_id)
+        raw = mod.get_artifacts(cycle_k)
+    except (ImportError, ValueError) as exc:
+        raise HTTPException(status_code=404, detail=f"Scenario unavailable: {exc}")
+
+    return [
+        ScenarioArtifact(
+            id=a["id"],
+            type=_artifact_tab(a.get("artifact_type", "")),
+            label=a["id"].replace("_", " "),
+            content=a["content"],
+            agent=a.get("agent_id", "unknown"),
+            stage=a.get("stage", "unknown"),
+        )
+        for a in raw
+    ]
+
+
+@router.post("/session/start")
+def start_session(
+    req: StartSessionRequest,
+    participant: CalParticipant = Depends(get_current_participant),
+    db: Session = Depends(get_db),
+):
+    if req.session_id:
+        session = _owned_session(db, req.session_id, participant)
+    else:
+        session = db.query(CalSession).filter(
+            CalSession.participant_id == participant.id,
+            CalSession.status == "invited",
+        ).order_by(CalSession.created_at.desc()).first()
+        if not session:
+            raise HTTPException(status_code=404, detail="No invited session to start")
+
+    if session.status == "completed":
+        raise HTTPException(status_code=409, detail="Session already completed")
+    session.status = "in_progress"
+    session.started_at = datetime.now(timezone.utc)
+    db.commit()
+    return {"ok": True, "session_id": session.id, "status": session.status}
+
+
+@router.post("/session/{session_id}/task")
+def submit_task(
+    session_id: str,
+    req: TaskSubmitRequest,
+    participant: CalParticipant = Depends(get_current_participant),
+    db: Session = Depends(get_db),
+):
+    session = _owned_session(db, session_id, participant)
+    accuracy = (1.0 if req.detected else 0.0) if req.detected is not None else None
+
+    db.add(CalTaskResult(
+        session_id=session.id,
+        task=req.task,
+        scenario=req.scenario,
+        accuracy=accuracy,
+        detected=req.detected,
+        time_to_first_correction_s=req.time_to_first_correction_s,
+        raw_response={"response": req.response,
+                      "corrections": [c.model_dump() for c in req.corrections]},
+    ))
+
+    category = SCENARIO_CATEGORY.get(req.scenario.upper(), "other")
+    for c in req.corrections:
+        db.add(CalInteractionEvent(
+            session_id=session.id,
+            event_type="correction",
+            artifact_id=c.artifact_id,
+            payload={
+                "task": req.task,
+                "scenario": req.scenario,
+                "fault_category": category,
+                "severity": SEVERITY_SCALE.get(c.severity, 3),
+                "description": c.description,
+                "location": c.location,
+                "time_to_first_correction_s": c.time_to_first_correction_s,
+            },
+        ))
+    db.commit()
+    return {"ok": True, "task": req.task, "scenario": req.scenario, "accuracy": accuracy}
+
+
+@router.post("/session/{session_id}/tlx")
+def submit_tlx(
+    session_id: str,
+    req: TLXRequest,
+    participant: CalParticipant = Depends(get_current_participant),
+    db: Session = Depends(get_db),
+):
+    session = _owned_session(db, session_id, participant)
+    db.add(CalTLXMeasurement(
+        session_id=session.id,
+        checkpoint=req.checkpoint,
+        mental_demand=req.mental_demand,
+        physical_demand=req.physical_demand,
+        temporal_demand=req.temporal_demand,
+        performance=req.performance,
+        effort=req.effort,
+        frustration=req.frustration,
+    ))
+    db.commit()
+    return {"ok": True, "checkpoint": req.checkpoint}
+
+
+@router.post("/session/{session_id}/policy")
+def inject_policy(
+    session_id: str,
+    req: PolicyInjectRequest,
+    participant: CalParticipant = Depends(get_current_participant),
+    db: Session = Depends(get_db),
+):
+    session = _owned_session(db, session_id, participant)
+    policy = CalPolicyIntent(
+        session_id=session.id,
+        scenario=req.scenario,
+        raw_policy=req.raw_policy,
+    )
+    db.add(policy)
+    db.add(CalInteractionEvent(
+        session_id=session.id,
+        event_type="policy_submit",
+        payload={"scenario": req.scenario},
+    ))
+    db.commit()
+    db.refresh(policy)
+    # PIQ scoring is wired in a later step (LLM-Judge) — raw policy stored now.
+    return {"ok": True, "policy_id": policy.id}
+
+
+@router.post("/session/{session_id}/complete")
+def complete_session(
+    session_id: str,
+    participant: CalParticipant = Depends(get_current_participant),
+    db: Session = Depends(get_db),
+):
+    session = _owned_session(db, session_id, participant)
+    session.status = "completed"
+    session.completed_at = datetime.now(timezone.utc)
+
+    ncf = compute_ncf_for_session(session)
+    if ncf:
+        proxies = ncf["proxies"]
+        db.add(CalNCFProxy(
+            session_id=session.id,
+            working_memory_saturation=proxies["working_memory_saturation"],
+            mean_sigma_severity=proxies["mean_sigma_severity"],
+            sigma_accuracy=proxies["sigma_accuracy"],
+            iqr_attention_fragmentation_s=proxies["iqr_attention_fragmentation_s"],
+            ncf_at_frontier=ncf["ncf_at_frontier"],
+        ))
+    db.commit()
+    return {"ok": True, "status": "completed", "ncf_computed": ncf is not None}
+
+
+@router.get("/session/{session_id}/results", response_model=ResultsResponse)
+def session_results(
+    session_id: str,
+    participant: CalParticipant = Depends(get_current_participant),
+    db: Session = Depends(get_db),
+):
+    session = _owned_session(db, session_id, participant)
+    ncf_row = session.ncf
+    ncf_dict = None
+    if ncf_row:
+        ncf_dict = {
+            "working_memory_saturation": ncf_row.working_memory_saturation,
+            "mean_sigma_severity": ncf_row.mean_sigma_severity,
+            "sigma_accuracy": ncf_row.sigma_accuracy,
+            "iqr_attention_fragmentation_s": ncf_row.iqr_attention_fragmentation_s,
+            "ncf_at_frontier": ncf_row.ncf_at_frontier,
+        }
+    return ResultsResponse(
+        session_id=session.id,
+        group=session.participant.group,
+        status=session.status,
+        task_results=[
+            TaskResultOut(task=r.task, scenario=r.scenario,
+                          accuracy=r.accuracy, detected=r.detected)
+            for r in session.task_results
+        ],
+        ncf=ncf_dict,
+    )

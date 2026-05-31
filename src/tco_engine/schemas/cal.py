@@ -88,3 +88,65 @@ class InviteRequest(BaseModel):
     scheduled_at: datetime
     layer: str = "L2"
     is_pilot: bool = False
+
+
+# ─── Session runner ───────────────────────────────────────────────────────────
+
+class StartSessionRequest(BaseModel):
+    session_id: Optional[str] = None   # defaults to participant's invited session
+
+
+class ScenarioArtifact(BaseModel):
+    id: str
+    type: Literal["code", "yaml", "architecture", "ci_cd"]
+    label: str
+    content: str
+    agent: str
+    stage: str
+
+
+class CorrectionInput(BaseModel):
+    artifact_id: str
+    severity: Literal["Low", "Medium", "High"] = "Medium"
+    description: str
+    location: str = ""
+    time_to_first_correction_s: Optional[float] = None
+
+
+class TaskSubmitRequest(BaseModel):
+    task: str                          # T1..T4
+    scenario: str                      # S1..S5
+    response: str = ""                 # free-text / selected answer
+    detected: Optional[bool] = None    # did the participant flag the fault?
+    time_to_first_correction_s: Optional[float] = None
+    corrections: list[CorrectionInput] = Field(default_factory=list)
+
+
+class TLXRequest(BaseModel):
+    checkpoint: Literal["post_t2", "post_t4"]
+    mental_demand: int = Field(ge=0, le=100)
+    physical_demand: int = Field(ge=0, le=100)
+    temporal_demand: int = Field(ge=0, le=100)
+    performance: int = Field(ge=0, le=100)
+    effort: int = Field(ge=0, le=100)
+    frustration: int = Field(ge=0, le=100)
+
+
+class PolicyInjectRequest(BaseModel):
+    scenario: str
+    raw_policy: str
+
+
+class TaskResultOut(BaseModel):
+    task: str
+    scenario: str
+    accuracy: Optional[float] = None
+    detected: Optional[bool] = None
+
+
+class ResultsResponse(BaseModel):
+    session_id: str
+    group: Optional[str] = None
+    status: str
+    task_results: list[TaskResultOut]
+    ncf: Optional[dict] = None
