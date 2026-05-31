@@ -27,6 +27,17 @@ Version 1.0 — April 2026
 2. Have you heard of or used Tensor-Based Cognitive Oversight (TCO)? (Disqualifier: Yes)
 3. Are you available for a 3-hour remote session in the next 4 weeks? (Threshold: Yes)
 
+**Full registration form (collected after pre-screening passes):**
+
+- Name, email, country
+- Years of code review experience
+- Education level (undergraduate / graduate / other) + institution (optional)
+- Primary languages / ecosystems
+- AI tool familiarity in daily development work (0–4 scale): 0=never · 1=rarely · 2=monthly · 3=weekly · 4=daily — *ANCOVA covariate, not used for group assignment*
+- Prior TCO exposure (re-confirmed)
+- Informed consent (DT-014)
+- Session availability
+
 **Incentive:** Non-monetary. Participants receive early access to the published results and are acknowledged in the paper's acknowledgments section (optional).
 
 **Stratification:** Participants are assigned to groups in pairs, stratified by years of experience:

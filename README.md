@@ -190,7 +190,7 @@ TCO maintains the orchestrator at the NCF by:
 |------------|------|-------------|
 | H1–H4 | Mann-Whitney U (two-tailed) | Cohen's d |
 | H5 | Spearman ρ (PIQ → Δ_vector) | ρ coefficient |
-| All | ANCOVA (control: experience + pre-test score) | Partial η² |
+| All | ANCOVA (control: experience + pre-test score + AI tool familiarity) | Partial η² |
 | Multiple comparison | Bonferroni correction (α_eff = 0.01) | Applied uniformly |
 | H3 (S3) | Mixed ANOVA | Group × Scenario interaction |
 
@@ -288,11 +288,11 @@ See Section 10.3 of [`Documentacion/TCO_Paper_Final_v3.md`](Documentacion/TCO_Pa
 | 1–2 | Build | Core engine: φ, f, I — all modules | ✅ Complete |
 | 3 | Build | Pipeline S1–S5 + corpus.json + φ calibration suite + evaluator reliability | ✅ Complete |
 | 4 | Build | Orchestration dashboard MVP + NCF proxies + PIQ rubric + warm-up S0 | ✅ Complete |
-| 5 | Pilot | Internal pilot n=4, protocol validation | Pending |
-| 6 | Calibration | φ no-go gate + LLM-Judge PIQ calibration (κ ≥ 0.70) | Pending |
-| 7–8 | Experiment | Full experiment n=40 | Pending |
-| 9 | Analysis | Statistical analysis | Pending |
-| 10 | Writing | Results + Discussion | Pending |
+| 5–7 | Build | Web platform `/cal` (DT-028) — registration, runner, admin dashboard | Pending |
+| 7 | Pilot | Internal pilot n=4, protocol + interface validation | Pending |
+| 8 | Calibration | φ no-go gate + LLM-Judge PIQ calibration (κ ≥ 0.70) | Pending |
+| 9–10 | Experiment | Full experiment n=40 | Pending |
+| 11 | Analysis + Writing | Statistical analysis + Results + Discussion | Pending |
 
 ---
 

@@ -24,3 +24,6 @@ Thumbs.db
 Documentacion/*.pdf
 Documentacion/*.docx
 Deuda Tecnica/*.docx
+# CAL platform local dev DB
+tco_cal.db
+*.db

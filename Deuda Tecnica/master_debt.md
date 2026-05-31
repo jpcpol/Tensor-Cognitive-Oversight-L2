@@ -38,6 +38,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-026 | Experimento — 4 proxies NCF operacionalizados en infra | Importante | Implementado |
 | DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Implementado |
 | DT-028 | Plataforma web experimento — researchlab.aural-syncro.com.ar/cal | Importante | Pendiente |
+| DT-029 | Script generador de informe post-piloto (`analysis/pilot_report.py`) | Importante | Pendiente |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
@@ -547,9 +548,19 @@ Cambios necesarios:
 
 ### DT-028 · Plataforma web experimento — researchlab.aural-syncro.com.ar/cal
 
-**Componente:** Research Lab (`c:\Users\Usuario\Documents\Aural Syncro\Research-Lab`) — nuevas rutas `/cal`  
-**Estado:** Pendiente — iniciar post-pilot n=4 (Semana 6)  
-**Prioridad:** Importante — habilita n=40 sin necesidad de coordinación presencial
+**Componente:** Servicio TCO propio (FastAPI + React) en red `sspa_infra`, path `/cal`  
+**Estado:** Pendiente — **iniciar antes del piloto** (Semana 5–7 build → Semana 7 piloto n=4)  
+**Prioridad:** Importante — habilita n=40 sin coordinación presencial  
+**Spec de implementación:** [`Documentacion/DT-028_web_platform_spec.md`](../Documentacion/DT-028_web_platform_spec.md)
+
+**Decisiones cerradas (2026-05-31):**
+- Topología: servicio TCO propio en `/cal` (no embebido en Research Lab); reutiliza Postgres/Timescale + patrón email SMTP
+- Frontend: SPA única React/Vite — reutiliza `ControlGroupViewer` + componentes del dashboard
+- Registro: auto-servicio con user/pass para todos; ejecución de prueba agendada por el admin vía email
+- Auth: JWT + bcrypt, roles `participant` / `admin`
+- Dashboard admin: listado de registrados, grupos asignados, completitud, resultados parciales/totales, export
+- Persistencia: el TCO Engine es dueño de toda la data del experimento (tablas `cal_*`)
+- **Orden invertido vs. plan original:** la plataforma se construye ANTES del piloto, para validar protocolo + interfaz real simultáneamente
 
 **Propósito dual:**
 1. **TCO-L2 (inmediato):** Plataforma de reclutamiento y ejecución del experimento RCT n=40
@@ -599,6 +610,7 @@ Research Lab (UX layer)           TCO Engine (backend experimento)
 - Años de experiencia en code review (threshold ≥ 2)
 - Nivel educativo (universitario / posgrado / otro) + institución (opcional)
 - Lenguajes/ecosistemas principales
+- Familiaridad con herramientas de IA en desarrollo (0–4): 0=nunca · 1=raramente · 2=mensual · 3=semanal · 4=diario — **covariable ANCOVA**
 - ¿Ha oído hablar de TCO antes? (disqualifier: sí)
 - Consentimiento informado (DT-014)
 - Disponibilidad para sesión de 3h
@@ -620,5 +632,37 @@ Los módulos `cal_participants`, email service, y el experiment runner son agnó
 
 ---
 
-*Última actualización: 28 Mayo 2026*  
-*Próxima revisión: post-pilot Semana 5 — iniciar DT-028*
+---
+
+## IMPORTANTE — Piloto
+
+### DT-029 · Script generador de informe post-piloto (`analysis/pilot_report.py`)
+
+**Componente:** `analysis/`  
+**Estado:** Pendiente  
+**Categoría:** Importante
+
+**Descripción:** Script que consolida los datos de las 4 sesiones del piloto y genera el informe definido en `protocols/pilot_protocol.md` (Sección 10).
+
+**Inputs esperados:**
+
+- `protocols/pilot_logs/P_PILOT_0X_log.md` — 4 logs del facilitador
+- Output de `ncf_proxy.py` (NCFProxies) — 4 participantes
+- Output de `nasa_tlx_form.py` — 8 mediciones (2 por participante)
+- Output de `accuracy_scorer.py` — T1–T4 por participante
+- Output de `interaction_timer.py` — timestamps por tarea
+
+**Outputs del informe:**
+
+- Heatmap timing real por fase × participante
+- Barras accuracy T1–T4 por grupo (orientativo, n=2 c/u)
+- Distribución NASA-TLX por grupo
+- Checklist go/no-go automático (6 criterios de la Sección 8 del pilot_protocol.md)
+- Export: `protocols/pilot_report_v1.md` + figuras PNG
+
+**Dependencia:** requiere las 4 sesiones del piloto completadas (Semana 5).
+
+---
+
+*Última actualización: 30 Mayo 2026*  
+*Próxima revisión: post-pilot Semana 5 — iniciar DT-028 + DT-029*
