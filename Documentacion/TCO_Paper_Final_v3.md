@@ -464,27 +464,84 @@ The variable `P_new` is a natural language policy reformulation. Examples: *"Pri
 
 ## 6. Research Objectives and Hypotheses
 
-### 6.1 General Objective
+### 6.1 Theoretical Reframing: Causal Observability for Human Governance
 
-To develop, formalize, and empirically validate a framework that enables humans to orchestrate complex AI-driven software systems through cognitively efficient, tensor-based representations — reducing brain fry, improving decision quality, enabling scalable supervision, and maintaining active human judgment through the Natural Cognitive Frontier.
+TCO-L2 is grounded in a theory of **causal observability for human governance**: the tensor T[d,i,j,k] makes the causal structure of multi-agent faults directly observable, reducing the cognitive cost of causal recovery and extending the set of faults that can be effectively governed.
 
-### 6.2 Specific Objectives
+The central claim has evolved from "cognitive load reduction" (a consequence) to the deeper mechanism:
+
+```
+T[d,i,j,k]
+  → C directly readable via indexed access (d, i, j, k)
+  → lower cost of causal recovery (vs. inferential reconstruction from raw)
+  → better governance decisions (H2, H5)
+  → lower cognitive load (H1 — mediator, not primary phenomenon)
+  → advantage grows with causal complexity of the scenario (H_OBS — primary claim)
+```
+
+This reframing is validated against the **CAL Benchmark v1.0** (`Documentacion/CAL_Benchmark_v1.md`), which defines the **Causal Complexity Index (CCI)** — an objective, pre-registrable measure of how many tensor indices are required to read the causal structure C of each scenario directly from T.
+
+| Scenario | CCI | Required tensor operation | Ω mechanism |
+|---|---|---|---|
+| S1 — Auth | 1 | Direct read: T[d=security_risk] | security_vulnerability |
+| S4 — Deploy | 2 | Indexed read: T[d=observability, i=deploy] | omission_failure |
+| S2 — Arch | 2 | Indexed read: T[d=arch_alignment, j=code_agent] | structural_violation |
+| S5 — Conflict | 3 | Ρ: \|T[d,j₁,k] − T[d,j₂,k]\| | inter_agent_conflict |
+| S3 — Debt | 4 | Δ: T[d=tech_debt, k=0..3] over 4 cycles | temporal_drift |
+
+S3 and S5 are **critical theory tests**: they are the only scenarios requiring tensor operations (Δ and Ρ) with no equivalent in per-artifact review. If TCO were merely a better-formatted display, improvement would be uniform. H_OBS predicts ΔPIQ(S3,S5) >> ΔPIQ(S1,S4) — a specific, falsifiable prediction that only a causal observability framework can make.
+
+### 6.2 General Objective
+
+To develop, formalize, and empirically validate a framework for **causal observability** in multi-agent AI systems that enables humans to govern complex pipelines through cognitively efficient, tensor-based representations — extending the space of governable faults beyond what is achievable through per-artifact review, while reducing cognitive load and improving decision quality.
+
+### 6.3 Specific Objectives
 
 1. Define a formal multidimensional evaluation vector φ that produces normalized, semantically comparable quality representations of AI-generated software artifacts.
-2. Establish a tensor aggregation function f that captures the system state across stages, agents, and time in a structure amenable to cognitive interface design.
-3. Design an inference model I that derives actionable system intelligence from the tensor, including early trend detection and inter-agent conflict identification.
-4. Formalize the Natural Cognitive Frontier (NCF) as a theoretical construct and demonstrate that TCO's architecture positions the human orchestrator at the NCF.
-5. Empirically validate the five hypotheses through a controlled comparative study with a functional MVP.
+2. Establish a tensor aggregation function f that captures causal structure across quality dimensions, pipeline stages, agents, and time in a form amenable to direct human observation.
+3. Design an inference model I that derives actionable causal attribution from the tensor (Ω, Δ, Ρ, Ξ), making the causal ontology Ω directly readable without inferential reconstruction.
+4. Formalize the Natural Cognitive Frontier (NCF) as the level of abstraction at which causal recovery cost is minimized while governance capacity is maximized.
+5. Empirically validate H_OBS and secondary hypotheses through a controlled comparative study with a functional MVP and a cross-paper pre-registered prediction (H_cross).
 
-### 6.3 Research Hypotheses
+### 6.4 Research Hypotheses
 
-| H | Hypothesis | Primary Metric | Instrument |
-|---|-----------|----------------|------------|
-| **H1** | TCO reduces the cognitive load of the human supervisor compared to traditional HITL supervision based on raw output review | NASA-TLX score (Raw-TLX), time-on-task, context switches | Survey + interaction log |
-| **H2** | TCO improves the accuracy of supervision decisions (error detection, risk assessment, deployment decision) | Error detection rate, false positive/negative ratio, decision accuracy score | Controlled task scoring |
-| **H3** | TCO enables greater supervision scalability: the same operator can manage more concurrent workflows with lower quality degradation | Workflows/operator ratio, decision throughput, quality degradation slope | Concurrent workflow simulation |
-| **H4** | Tensor inference improves early detection of systemic risks before they reach critical thresholds | Lead time to detection, false alarm rate, risk prediction accuracy (AUC) | Retrospective scenario analysis |
-| **H5** | The natural language policy injection mechanism produces system re-orchestration policies of higher systemic quality than direct technical corrections from the control group | System quality delta post-injection, vector improvement per pilar, semantic quality score (PIQ) | Cross-group policy evaluation |
+**Primary hypothesis:**
+
+| H | Hypothesis | Primary Metric | Test |
+|---|-----------|----------------|------|
+| **H_OBS** | TCO governance advantage is proportional to scenario CCI: ΔPIQ(S3,S5) >> ΔPIQ(S1,S4) | ΔPIQ × CCI interaction | Mixed ANOVA: Group × CCI |
+
+**Secondary hypotheses:**
+
+| H | Hypothesis | Primary Metric | Test |
+|---|-----------|----------------|------|
+| **H1** | TCO reduces cognitive load vs. traditional HITL | NASA Raw-TLX | Mann-Whitney U |
+| **H2** | TCO improves detection precision + recall | Error detection rate, decision accuracy | Cohen's d ≥ 0.50 |
+| **H4** | Tensor inference detects systemic risks before critical thresholds | Lead time to detection, time-to-correct | Wilcoxon |
+| **H5** | NL policy injection produces higher-quality re-orchestration | PIQ score (LLM-Judge, κ ≥ 0.70) | Spearman ρ |
+
+> **Note on H3:** The original H3 (scalability via concurrent workflows) is replaced by H_OBS, which captures the same scalability intuition more precisely: TCO does not merely scale supervision uniformly — it extends governance to fault classes (high-CCI) that are not supervisable at all with traditional HITL.
+
+**Cross-paper hypothesis (pre-registered before RCT data collection):**
+
+| H | Hypothesis | Metric | Source |
+|---|---|---|---|
+| **H_cross** | SID_C*(s) predicts ΔPIQ(s) across S1–S5 | r_Spearman(SID_C*, ΔPIQ) > 0 | Paper 1 (SID Study) → Paper 2 (RCT) |
+
+H_cross is computed from Paper 1 (SID Study on CAL Benchmark S1–S5) and pre-registered before Paper 2 data collection begins. This converts the two-paper program from parallel corroboration to sequential prediction-and-confirmation.
+
+### 6.5 Statistical Analysis Plan
+
+| Hypothesis | Test | Effect Size | Notes |
+|------------|------|-------------|-------|
+| H_OBS | Mixed ANOVA: Group × CCI | Partial η² (interaction) | Primary — H_OBS is the falsifying test |
+| H1 | Mann-Whitney U (two-tailed) | Cohen's d | |
+| H2 | Mann-Whitney U (two-tailed) | Cohen's d | |
+| H4 | Wilcoxon signed-rank | Cohen's d | ARIMA on S3 temporal trajectory |
+| H5 | Spearman ρ + linear regression | ρ + β | PIQ → Δ_vector |
+| All | ANCOVA | Partial η² | Covariates: experience + pre-test + AI tool familiarity (0–4) |
+| All | Bonferroni correction | α_eff = 0.01 | Applied uniformly across 5 hypotheses |
+| H_cross | Spearman ρ across 5 scenarios | ρ coefficient | Pre-registered; computed after Paper 1 SID values are fixed |
 
 ---
 

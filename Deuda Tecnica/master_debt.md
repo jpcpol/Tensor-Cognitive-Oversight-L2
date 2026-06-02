@@ -39,6 +39,13 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Implementado |
 | DT-028 | Plataforma web experimento — researchlab.aural-syncro.com.ar/cal | Importante | Pendiente |
 | DT-029 | Script generador de informe post-piloto (`analysis/pilot_report.py`) | Importante | Pendiente |
+| DT-030 | Scripts de análisis estadístico H1–H5 + H_OBS + ANCOVA + effect sizes | **Crítica** | Implementado |
+| DT-031 | Test suite real para core (vectorizer, aggregator, inference, qa_evaluator) | **Crítica** | Implementado |
+| DT-032 | SID Study S1–S5: infraestructura de probes + estimación MI para pre-registro H_cross | Alta | Pendiente |
+| DT-033 | Definición formal de observabilidad causal vs. XAI/interpretabilidad (doc teórico Paper 1) | Alta | Pendiente |
+| DT-034 | Corpus extensión S6–S8 (Nivel 2 SID Study): 80–120 artefactos en familias causales nuevas | Media | Pendiente |
+| DT-035 | Estrategia de reproducibilidad LLM: versiones pinned, outputs archivados, seeds documentados | Media | Pendiente |
+| DT-036 | DT-028 Fase 2 frontend React: TaskSequencer, NASATLXForm, InteractionTracker, tcoClient | **Crítica** | Implementado |
 
 **Estados:**
 `Pendiente` · `En Progreso` · `Decisión Tomada` · `Implementado` · `Desechado`
@@ -664,5 +671,123 @@ Los módulos `cal_participants`, email service, y el experiment runner son agnó
 
 ---
 
-*Última actualización: 30 Mayo 2026*  
-*Próxima revisión: post-pilot Semana 5 — iniciar DT-028 + DT-029*
+---
+
+## POST-AUDITORÍA — Deuda crítica identificada (2026-06-02)
+
+### DT-030 · Scripts de análisis estadístico H1–H5 + ANCOVA + effect sizes
+
+**Componente:** `analysis/_data.py` · `_stats.py` · `h1_cognitive_load.py` · `h2_decision_accuracy.py` · `h4_early_detection.py` · `h5_policy_quality.py` · `h_obs_causal.py` · `ancova_all.py` · `effect_sizes.py` · `visualizations.py`  
+**Estado:** ✅ Implementado (2026-06-02) — los 8 scripts ejecutan end-to-end con `--dry-run` (exit 0, recuperan el efecto plantado)  
+**Categoría:** Crítica — bloquea el análisis post-experimento
+
+**Por qué era crítica:** Los datos del RCT n=40 no son analizables sin estos scripts. Resuelto: el pipeline analítico está validado antes del piloto vía datos sintéticos.
+
+**Arquitectura implementada:**
+
+- `_data.py` — capa de datos compartida. `load_dataset(db_url)` lee las tablas `cal_*` vía SQLAlchemy (solo sesiones `completed`, no-piloto) y las aplana en frames tidy; `synthetic_dataset()` genera un fixture RCT reproducible con la estructura de efecto **pre-registrada** (efecto ∝ CCI) para validar el pipeline. Fuerza UTF-8 en stdout (consola Windows).
+- `_stats.py` — primitivas: Cohen's d, Hedges' g, rank-biserial, Cliff's δ, bootstrap percentil (independiente y **emparejado** para correlaciones), interpretación de magnitud.
+- `h1_cognitive_load.py` — Mann-Whitney U (1-cola) sobre Raw-TLX @ post_t4; Cohen's d + rank-biserial con CIs bootstrap; desglose por subescala.
+- `h2_decision_accuracy.py` — accuracy media por participante (MWU, Cohen's d, Cliff's δ); detección por escenario **ordenado por CCI** (Fisher exact) → firma H_OBS descriptiva.
+- `h4_early_detection.py` — MWU sobre time-to-first-correction (pooled + por escenario); slope OLS descriptivo de la trayectoria S3 (v₈). ARIMA diferido a datos reales.
+- `h5_policy_quality.py` — Spearman ρ(PIQ, Δ_vector) con bootstrap **emparejado**; regresión OLS; PIQ medio por escenario y ρ(CCI, PIQ). Solo grupo experimental.
+- `h_obs_causal.py` — **PRIMARIO.** Mixed ANOVA Group×CCI (pingouin, partial η²); contraste pre-registrado gap(S3,S5) − gap(S1,S4); slope gap∝CCI.
+- `ancova_all.py` — ANCOVA `outcome ~ C(group) + years_experience + ai_familiarity + C(stratum)` (statsmodels typ-2); partial η² por término; efecto de grupo ajustado.
+- `effect_sizes.py` — reusa cada `run()`; tabla unificada con CIs 95%; export `--csv`.
+- `visualizations.py` — figuras del paper (slope H_OBS, violín TLX, barras detección×CCI, forest plot). Artefactos generados en `analysis/figures/` (gitignored: dry-run no es resultado).
+
+**Verificación:** los 8 scripts corren con `python analysis/<script>.py --dry-run`; con datos reales, `--db sqlite:///tco_cal.db`. Deps en `analysis/requirements.txt` (scipy, statsmodels, pingouin, scikit-learn, matplotlib). `h3_scalability.py` **absorbido en H_OBS** (DT-032).
+
+### DT-031 · Test suite real para el core
+
+**Componente:** `src/tco_engine/tests/` (4 archivos vacíos)  
+**Estado:** Pendiente — **0 tests reales en todo el proyecto**  
+**Categoría:** Crítica — el motor que produce los números de las hipótesis no tiene red de seguridad
+
+**Tests requeridos (mínimo viable):**
+
+- `test_vectorizer.py` — vectorize artifact → EvaluationVector, cache hit/miss, clip [0,1]
+- `test_aggregator.py` — aggregate entries → T shape correcto; slice nombrado; NaN handling
+- `test_inference_engine.py` — omega stable/warning/critical; Δ slope detection; Ρ conflict threshold; S3 Δ detectable en 4 ciclos; S5 Ρ detectado entre j1/j2
+- `test_qa_evaluator.py` — mock LLM response → parsing correcto; fallback regex; max_tokens suficientes (DT-024)
+
+**Prioridad dentro de los tests:** `test_inference_engine.py` primero — es el módulo que produce Ω, Δ, Ρ, Ξ directamente.
+
+### DT-032 · SID Study S1–S5: infraestructura de probes + MI para pre-registro H_cross
+
+**Componente:** `analysis/sid_study/` (nuevo)  
+**Estado:** Pendiente — bloquea el pre-registro de H_cross antes del RCT  
+**Categoría:** Alta — la elegancia del programa CAL depende de esto
+
+**Descripción:** Implementar la infraestructura mínima para computar SID_C*(S1..S5) sobre el corpus existente (12 artefactos) y pre-registrar la predicción de H_cross antes de correr el RCT n=40.
+
+**Componentes:**
+
+- `analysis/sid_study/probe.py` — probe lineal (logistic regression) + P_structural (lectura directa de índices)
+- `analysis/sid_study/mi_estimator.py` — estimación de I(R; Y) para representaciones raw, V, T
+- `analysis/sid_study/sid_compute.py` — SID*(R) = I(R;Y) / (C(R) + λ·H_noise(R)); SID_D* y SID_C*
+- `analysis/sid_study/benchmark_s1s5.py` — corre los probes sobre corpus S1–S5 y produce la predicción SID_C*(s) para pre-registro
+
+**Dependencia crítica de secuencia:** este script debe correr y producir resultados ANTES de comenzar la recolección de datos del RCT para que H_cross sea una predicción pre-registrada.
+
+### DT-033 · Definición formal de observabilidad causal vs. XAI/interpretabilidad
+
+**Componente:** `Documentacion/Causal_Observability_Theory.md`  
+**Estado:** Pendiente — cimiento teórico del Paper 1 (FAccT)  
+**Categoría:** Alta
+
+**Descripción:** Documento teórico de 3–5 páginas que formaliza "observabilidad causal para gobernanza humana" y la diferencia de XAI e interpretabilidad.
+
+**Tres distinciones a formalizar:**
+
+1. XAI / interpretabilidad → explica decisiones de un modelo; objetivo: comprensión
+2. Monitoring / observabilidad → estado operacional del sistema; objetivo: diagnóstico técnico
+3. **Observabilidad causal para gobernanza (CAL)** → estructura causal relevante para decisiones supervisorias; objetivo: acción de gobernanza
+
+La diferencia clave: CAL no intenta explicar *por qué* el sistema hizo lo que hizo (XAI), ni si está operacionalmente saludable (monitoring). Intenta exponer *qué estructura causal* debe observar el gobernador para tomar la decisión correcta.
+
+**Referencia clave para diferenciar:** Doshi-Velez & Kim (2017) taxonomy of interpretability — ninguna de sus categorías captura la dimensión de gobernanza.
+
+### DT-034 · Corpus extensión S6–S8 (Nivel 2 del SID Study)
+
+**Componente:** `src/pipeline/scenarios/s6_silent_drift.py` · `s7_propagation.py` · `s8_resolution_failure.py`  
+**Estado:** Pendiente — para Paper 1, no bloquea el RCT  
+**Categoría:** Media
+
+**Mecanismos:**
+
+- S6 (`silent_drift`) — degradación temporal por debajo del umbral Δ de detección; prueba límite de observabilidad
+- S7 (`propagation_failure`) — fault en agente A causa fault en agente B downstream; requiere índice i (cascada de etapas)
+- S8 (`resolution_failure`) — política de re-orquestación incorrecta → conflicto reaparece en k+1; prueba SID_C* en ciclos post-intervención
+
+### DT-035 · Estrategia de reproducibilidad LLM
+
+**Componente:** `analysis/reproducibility_log.md` + ajustes en `qa_evaluator.py`  
+**Estado:** Pendiente  
+**Categoría:** Media — revisor de FAccT lo señalará
+
+**Acciones:**
+
+- Pinear versión del modelo en `.env.example` (`LLM_MODEL=anthropic/claude-sonnet-4-6` → especificar fecha/versión exacta)
+- Archivar los outputs LLM del corpus de calibración (JSON con prompt + completion) en `src/experiment/phi_calibration/llm_outputs/`
+- Documentar seeds de numpy para análisis estadístico
+
+### DT-036 · DT-028 Fase 2 frontend React
+
+**Componente:** `src/dashboard/src/` — stubs vacíos  
+**Estado:** Pendiente (backend de Fase 2 completo y verificado; frontend sin iniciar)  
+**Categoría:** Crítica — bloquea el piloto y el experimento
+
+**Stubs a implementar (en orden):**
+
+1. `App.tsx` — routing + auth guards (participant / admin)
+2. `src/api/tcoClient.ts` + `experimentClient.ts` — clientes del backend
+3. `experiment/TaskSequencer.tsx` — orquestador del runner (pre-test → S0 → T1–T4 → TLX × 2 con pausa)
+4. `experiment/NASATLXForm.tsx` — formulario TLX digital
+5. `experiment/InteractionTracker.ts` — instrumentación de eventos
+6. Componentes del dashboard experimental: `VectorRadar`, `TensorHeatmap`, `InferencePanel`, `PolicyInjection`
+
+---
+
+*Última actualización: 2026-06-02 — DT-030 implementado (8 scripts de análisis, dry-run validado)*  
+*Próxima revisión: DT-032 (SID S1–S5 + pre-registro H_cross) antes del piloto*

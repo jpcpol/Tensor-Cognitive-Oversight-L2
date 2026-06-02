@@ -153,13 +153,30 @@ TCO maintains the orchestrator at the NCF by:
 
 ## Research Hypotheses
 
-| H | Hypothesis | Primary Metric | Test |
-|---|-----------|----------------|------|
-| **H1** | TCO reduces cognitive load vs. traditional HITL | NASA Raw-TLX | Mann-Whitney U |
-| **H2** | TCO improves detection precision + recall vs. ground truth | Precision + Recall | Cohen's d > 0.50 |
-| **H3** | TCO enables scalable supervision (S3 accumulative vs. S1–S2 static) | Accuracy in S3 | Mixed ANOVA |
-| **H4** | Tensor inference detects systemic risks before critical thresholds | Time-to-correct | Wilcoxon |
-| **H5** | NL policy injection produces higher-quality re-orchestration | PIQ score (LLM-Judge, κ ≥ 0.70) | Spearman ρ |
+TCO is grounded in a theory of **causal observability for human governance**: the tensor T makes the causal structure of multi-agent faults directly observable, reducing the cost of causal recovery and extending the set of faults that can be governed.
+
+| H | Level | Hypothesis | Primary Metric | Test |
+|---|---|-----------|----------------|------|
+| **H_OBS** | **Primary** | TCO advantage grows with causal complexity — ΔPIQ(S3,S5) >> ΔPIQ(S1,S4) | ΔPIQ × CCI interaction | Mixed ANOVA: Group × CCI |
+| **H1** | Secondary | TCO reduces cognitive load vs. traditional HITL | NASA Raw-TLX | Mann-Whitney U |
+| **H2** | Secondary | TCO improves detection precision + recall | Precision + Recall | Cohen's d > 0.50 |
+| **H4** | Secondary | Tensor inference detects systemic risks before thresholds | Time-to-correct | Wilcoxon |
+| **H5** | Secondary | NL policy injection produces higher-quality re-orchestration | PIQ score (κ ≥ 0.70) | Spearman ρ |
+
+> H3 (S3 scalability) is absorbed into H_OBS as the highest-CCI data point. S3 and S5 are **critical theory tests**: if the framework is only a better summary, improvement would be uniform across scenarios. If it provides causal observability, improvement should be markedly larger for high-CCI scenarios.
+
+**Causal Complexity Index (CCI)** — pre-registrable, defined by tensor indices required to read C(s) directly:
+
+| Scenario | CCI | Tensor operation | Mechanism |
+|---|---|---|---|
+| S1 — Auth | 1 | Direct read: T[d=security_risk] | security_vulnerability |
+| S4 — Deploy | 2 | Indexed read: T[d=observability, i=deploy] | omission_failure |
+| S2 — Arch | 2 | Indexed read: T[d=arch_alignment, j=code_agent] | structural_violation |
+| S5 — Conflict | 3 | Ρ: \|T[d,j₁,k] − T[d,j₂,k]\| | inter_agent_conflict |
+| S3 — Debt | 4 | Δ: T[d=tech_debt, k=0..3] over 4 cycles | temporal_drift |
+
+**Cross-paper prediction (H_cross, pre-registered before RCT data collection):**  
+`r_Spearman(SID_C*(s), ΔPIQ(s)) > 0` for s ∈ {S1,S2,S3,S4,S5} — Paper 1 predicts; Paper 2 confirms.
 
 ---
 
@@ -172,27 +189,32 @@ TCO maintains the orchestrator at the NCF by:
 | Control — Traditional HITL | Raw outputs: code, logs, configs. Standard IDE + terminal. | Direct artifact editing |
 | Experimental — TCO | TCO dashboard: vector V, tensor slices, {Ω,Δ,Ρ,Ξ}. | Natural language policy injection |
 
-### The Five Experimental Scenarios
+### The Five Experimental Scenarios (CAL Benchmark v1.0)
 
-| Scenario | Fault Type | Dimensions Affected | Detectable via |
-|----------|-----------|--------------------|--------------------|
-| S1 — Auth | SQL injection in auth module | v₄ −0.61, v₁₁ −0.59 | Raw: code reading · TCO: radar + Ρ |
-| S2 — Arch | Circular dependency (hexagonal violation) | v₂ −0.41, v₇ −0.26 | Raw: expert knowledge · TCO: tensor slice |
-| S3 — Debt | 3-cycle accumulating cyclomatic complexity | v₈ −0.08/cycle | Raw: **not reliably detectable** · TCO: Δ trend |
-| S4 — Deploy | K8s config disabling Prometheus metrics | v₅ −0.56, v₉ −0.26 | Raw: full YAML review · TCO: Ξ alert |
-| S5 — Conflict | Code agent (stateless) vs. Arch agent (stateful) | ΔΡ +0.41 | Raw: **not reliably detectable in isolation** · TCO: Ρ only |
+Formal annotation: [`Documentacion/CAL_Benchmark_v1.md`](Documentacion/CAL_Benchmark_v1.md)
 
-> **S3 and S5 are not reliably detectable through individual artifact review.** S3 requires cross-temporal correlation across cycles; S5 requires simultaneous cross-agent comparison. Both are naturally surfaced by joint indexing over `T[d,i,j,k]`. This asymmetry is the direct empirical argument for tensor operational first-classness and the primary test of TCO's unique detection capability.
+| Scenario | CCI | Fault Type | Dimensions Affected | Tensor operation |
+|----------|---|-----------|--------------------|--------------------|
+| S1 — Auth | 1 | SQL injection in auth module | v₄ −0.61, v₁₁ −0.59 | Direct read T[security_risk] |
+| S4 — Deploy | 2 | K8s config disabling Prometheus metrics | v₅ −0.56, v₉ −0.26 | Indexed read T[observability, deploy] |
+| S2 — Arch | 2 | Circular dependency (hexagonal violation) | v₂ −0.41, v₇ −0.26 | Indexed read T[arch_alignment, code_agent] |
+| S5 — Conflict | **3** | Code agent vs. Arch agent inter-agent conflict | ΔΡ +0.41 | **Ρ** pairwise comparison |
+| S3 — Debt | **4** | 3-cycle accumulating cyclomatic complexity | v₈ −0.08/cycle | **Δ** temporal trajectory |
+
+> **S3 (CCI=4) and S5 (CCI=3) are the critical theory tests.** They are the only scenarios requiring the temporal index `k` and the agent comparison `j₁ vs j₂` respectively — tensor operations without equivalent in per-artifact review. If TCO were merely a better-designed dashboard, improvement would be uniform across all CCI levels. H_OBS predicts that improvement concentrates at high CCI — a prediction only a causal observability framework can make.
 
 ### Statistical Analysis Plan
 
 | Hypothesis | Test | Effect Size |
 |------------|------|-------------|
-| H1–H4 | Mann-Whitney U (two-tailed) | Cohen's d |
+| **H_OBS** | Mixed ANOVA: Group × CCI | Partial η² (Group × CCI interaction) |
+| H1 | Mann-Whitney U (two-tailed) | Cohen's d |
+| H2 | Mann-Whitney U (two-tailed) | Cohen's d |
+| H4 | Wilcoxon signed-rank | Cohen's d |
 | H5 | Spearman ρ (PIQ → Δ_vector) | ρ coefficient |
 | All | ANCOVA (control: experience + pre-test score + AI tool familiarity) | Partial η² |
 | Multiple comparison | Bonferroni correction (α_eff = 0.01) | Applied uniformly |
-| H3 (S3) | Mixed ANOVA | Group × Scenario interaction |
+| H_cross | Spearman ρ across 5 scenarios (SID_C* vs ΔPIQ) | ρ coefficient |
 
 ---
 
@@ -252,10 +274,10 @@ POST /policy/inject        — Receive P_new, extract PolicyIntent, re-orchestra
 
 | Step | Target | Status |
 |------|--------|--------|
-| **Preprint** | arXiv cs.HC — establish priority of NCF + TCO framework | Prepare after Week 4 Build |
-| **Workshop paper** | CHI 2027 (submission Sep 2026) | LaTeX draft complete → `Documentacion/TCO_LaTeX/main.tex` |
-| **Full paper** | EMSE Special Issue "Human-Centered AI for SE" | After Week 10 (with experimental data) |
-| **Alternate venue** | FSE 2027 research track / CHI 2027 full paper | Contingency |
+| **Paper 1 — SID Study** | FAccT 2027 — causal observability theory + SID_C* benchmark | Draft after Week 9 calibration |
+| **Paper 2 — TCO-L2 RCT** | CHI 2027 (submission Sep 2026) — H_OBS + H1–H5 with H_cross confirmation | LaTeX draft: `Documentacion/TCO_LaTeX/main.tex` |
+| **Preprint** | arXiv cs.HC — establish priority of NCF + causal observability framework | After Week 7 (pre-register + preprint) |
+| **Full paper** | EMSE Special Issue "Human-Centered AI for SE" | After Week 12 (with experimental data) |
 
 The ACM-formatted LaTeX submission draft is at [`Documentacion/TCO_LaTeX/main.tex`](Documentacion/TCO_LaTeX/main.tex) with 30 BibTeX entries in [`references.bib`](Documentacion/TCO_LaTeX/references.bib).
 
@@ -281,18 +303,24 @@ See Section 10.3 of [`Documentacion/TCO_Paper_Final_v3.md`](Documentacion/TCO_Pa
 
 ---
 
-## 10-Week Implementation Roadmap
+## 12-Week Implementation Roadmap (v2 — post-audit)
+
+Full detail: [`protocols/experimental_roadmap_v2.md`](protocols/experimental_roadmap_v2.md)
 
 | Week | Phase | Deliverable | Status |
 |------|-------|-------------|--------|
 | 1–2 | Build | Core engine: φ, f, I — all modules | ✅ Complete |
 | 3 | Build | Pipeline S1–S5 + corpus.json + φ calibration suite + evaluator reliability | ✅ Complete |
 | 4 | Build | Orchestration dashboard MVP + NCF proxies + PIQ rubric + warm-up S0 | ✅ Complete |
-| 5–7 | Build | Web platform `/cal` (DT-028) — registration, runner, admin dashboard | Pending |
-| 7 | Pilot | Internal pilot n=4, protocol + interface validation | Pending |
-| 8 | Calibration | φ no-go gate + LLM-Judge PIQ calibration (κ ≥ 0.70) | Pending |
-| 9–10 | Experiment | Full experiment n=40 | Pending |
-| 11 | Analysis + Writing | Statistical analysis + Results + Discussion | Pending |
+| 5 | Build | DT-028 backend (auth, sessions, admin) + DT-031 core test suite | ✅ Complete (backend) |
+| 6 | Build | DT-036 frontend React (TaskSequencer, TLX, InteractionTracker, dashboard components) | Pending |
+| 7 | Build + Analysis | DT-030 statistical scripts (H1–H5, ANCOVA) + DT-032 SID S1–S5 probe + pre-register H_cross | Pending |
+| 8 | Pilot | Internal pilot n=4 (`protocols/pilot_protocol.md`) — protocol + interface validation | Pending |
+| 9 | Calibration | φ no-go gate (Spearman ρ ≥ 0.75) + LLM-Judge PIQ calibration (κ ≥ 0.70) | Pending |
+| 10–11 | Experiment | Full experiment n=40 | Pending |
+| 12 | Analysis + Writing | Run H1–H5 scripts + H_cross correlation + Paper 2 draft | Pending |
+
+**Critical sequencing constraint:** DT-032 (SID_C* computation on S1–S5) must complete and be pre-registered **before** Week 10 data collection. H_cross is only valid as a prediction if computed before the RCT data is visible.
 
 ---
 
