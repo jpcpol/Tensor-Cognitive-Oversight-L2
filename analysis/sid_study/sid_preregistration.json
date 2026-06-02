@@ -1,0 +1,109 @@
+{
+  "generated_at": "2026-06-02T21:36:22.600448+00:00",
+  "corpus_version": "1.0",
+  "is_synthetic": false,
+  "lambda": 0.1,
+  "ordering_statistic": "M_advantage",
+  "M_advantage": {
+    "S1": 0.0,
+    "S2": 0.0,
+    "S3": 0.5,
+    "S4": 0.0,
+    "S5": 0.3
+  },
+  "spearman_M_advantage_CCI": 0.9177,
+  "SID_C_star": {
+    "S1": 0.2674452236719168,
+    "S2": 0.2674452236719168,
+    "S3": 0.2683150367053007,
+    "S4": 0.2674452236719168,
+    "S5": 0.0
+  },
+  "predicted_order": [
+    "S3",
+    "S5",
+    "S4",
+    "S1",
+    "S2"
+  ],
+  "h_cross_prediction": "Expected ΔPIQ ordering follows M_advantage — the tensor detector's robustness gain over an absolute baseline across heterogeneous project baselines: S3 > S5 > S4 > S1 > S2. Spearman ρ(M_advantage, ΔPIQ) should be positive and significant. M_advantage scales with CCI (ρ≈+0.92): tensor-level faults (S3 Δ, S5 Ρ) defeat an absolute threshold under basal variation while direct faults do not. SID_C*(R_T) saturates (Fano=H(Y)) and is retained for reference only.",
+  "interpretation": "Ordering statistic is M_advantage(s) = M_tensor(s) − M_baseline(s), computed over a heterogeneous-basal ensemble (the scenario's healthy baseline is shifted across BASAL_SHIFTS to model project-to-project variation). M_tensor scores a RELATIVE tensor detector (Δ for S3, Ρ for S5, Δ-to-clean otherwise); M_baseline scores an ABSOLUTE V<0.45 detector. The relative detector is basal-invariant; the absolute one degrades as the basal varies. M_advantage is therefore large exactly for tensor-level faults (S3, S5) and ~0 for low-CCI direct faults the absolute detector handles anyway — i.e. it scales with CCI (Spearman ρ≈+0.92). predicted_order ranks scenarios by M_advantage descending; H_cross states this matches the ΔPIQ ordering in the RCT n=40 (Paper 2). The accuracy-based SID_C*(R_T) saturates (P_structural=1.0 → Fano lower bound = H(Y)) and is retained for reference only.",
+  "corpus_v1_note": "Corpus v1.0 supplies one instance per scenario; the heterogeneous baseline is simulated via BASAL_SHIFTS. S5 remains degenerate (both artifacts are fault-class; no clean pair), so its margin is one-sided. DT-034 (corpus v2) should supply genuine multi-basal replicas and an S5-clean pair to replace the simulated ensemble.",
+  "by_scenario": [
+    {
+      "scenario": "S1",
+      "M_tensor": 1.0,
+      "M_baseline": 1.0,
+      "M_advantage": 0.0,
+      "margin_degenerate": false,
+      "SID_D_raw": 0.1106,
+      "SID_D_V": 0.0629,
+      "SID_D_T": 0.2674,
+      "SID_C_raw": 0.1106,
+      "SID_C_V": 0.0629,
+      "SID_C_T": 0.2674,
+      "T_advantage": 0.1568,
+      "structural_probe_acc": 1.0
+    },
+    {
+      "scenario": "S2",
+      "M_tensor": 1.0,
+      "M_baseline": 1.0,
+      "M_advantage": 0.0,
+      "margin_degenerate": false,
+      "SID_D_raw": 0.1108,
+      "SID_D_V": 0.0629,
+      "SID_D_T": 0.2674,
+      "SID_C_raw": 0.1108,
+      "SID_C_V": 0.0629,
+      "SID_C_T": 0.2674,
+      "T_advantage": 0.1567,
+      "structural_probe_acc": 1.0
+    },
+    {
+      "scenario": "S3",
+      "M_tensor": 1.0,
+      "M_baseline": 0.5,
+      "M_advantage": 0.5,
+      "margin_degenerate": false,
+      "SID_D_raw": 0.1598,
+      "SID_D_V": 0.063,
+      "SID_D_T": 0.2683,
+      "SID_C_raw": 0.021,
+      "SID_C_V": 0.0,
+      "SID_C_T": 0.2683,
+      "T_advantage": 0.2474,
+      "structural_probe_acc": 1.0
+    },
+    {
+      "scenario": "S4",
+      "M_tensor": 1.0,
+      "M_baseline": 1.0,
+      "M_advantage": 0.0,
+      "margin_degenerate": false,
+      "SID_D_raw": 0.1105,
+      "SID_D_V": 0.0629,
+      "SID_D_T": 0.2674,
+      "SID_C_raw": 0.1105,
+      "SID_C_V": 0.0629,
+      "SID_C_T": 0.2674,
+      "T_advantage": 0.1569,
+      "structural_probe_acc": 1.0
+    },
+    {
+      "scenario": "S5",
+      "M_tensor": 0.8,
+      "M_baseline": 0.5,
+      "M_advantage": 0.3,
+      "margin_degenerate": true,
+      "SID_D_raw": 0.1102,
+      "SID_D_V": 0.0629,
+      "SID_D_T": 0.2674,
+      "SID_C_raw": 0.0,
+      "SID_C_V": 0.0,
+      "SID_C_T": 0.0,
+      "T_advantage": 0.0,
+      "structural_probe_acc": 1.0
+    }
+  ]
+}

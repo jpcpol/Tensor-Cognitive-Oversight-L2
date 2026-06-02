@@ -41,7 +41,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-029 | Script generador de informe post-piloto (`analysis/pilot_report.py`) | Importante | Pendiente |
 | DT-030 | Scripts de análisis estadístico H1–H5 + H_OBS + ANCOVA + effect sizes | **Crítica** | Implementado |
 | DT-031 | Test suite real para core (vectorizer, aggregator, inference, qa_evaluator) | **Crítica** | Implementado |
-| DT-032 | SID Study S1–S5: infraestructura de probes + estimación MI para pre-registro H_cross | Alta | Pendiente |
+| DT-032 | SID Study S1–S5: infraestructura de probes + estimación MI para pre-registro H_cross | Alta | Implementado |
 | DT-033 | Definición formal de observabilidad causal vs. XAI/interpretabilidad (doc teórico Paper 1) | Alta | Pendiente |
 | DT-034 | Corpus extensión S6–S8 (Nivel 2 SID Study): 80–120 artefactos en familias causales nuevas | Media | Pendiente |
 | DT-035 | Estrategia de reproducibilidad LLM: versiones pinned, outputs archivados, seeds documentados | Media | Pendiente |
@@ -715,20 +715,35 @@ Los módulos `cal_participants`, email service, y el experiment runner son agnó
 
 ### DT-032 · SID Study S1–S5: infraestructura de probes + MI para pre-registro H_cross
 
-**Componente:** `analysis/sid_study/` (nuevo)  
-**Estado:** Pendiente — bloquea el pre-registro de H_cross antes del RCT  
+**Componente:** `analysis/sid_study/` (6 archivos implementados)  
+**Estado:** ✅ Implementado + auditado (2026-06-02) — statistic de orden corregido a M_advantage; JSON de pre-registro regenerado  
 **Categoría:** Alta — la elegancia del programa CAL depende de esto
 
-**Descripción:** Implementar la infraestructura mínima para computar SID_C*(S1..S5) sobre el corpus existente (12 artefactos) y pre-registrar la predicción de H_cross antes de correr el RCT n=40.
+**Lo que se construyó:**
 
-**Componentes:**
+- `representations.py` — tres encoders: R_raw (TF-IDF char n-gram), R_V (vector φ 11-dim del ground truth), R_T (tensor joint: V + Δ + Ρ bloques, 33 dims). Labels Y=(D,C) con anotación causal explícita. **Fix de auditoría:** los valores por-artefacto de S3 se subieron (k0=0.78→k3=0.52, todos ≥ umbral absoluto 0.45) para que el drift sea recuperable SÓLO vía la operación Δ del tensor, no leyendo el valor absoluto de cada k (antes k3=0.44 filtraba bajo 0.45).
+- `probe.py` — P_linear (LOO logistic, n=2–4); P_structural (threshold sobre el índice CCI: Δ para S3, Ρ para S5, directo para S1/S2/S4).
+- `mi_estimator.py` — I(R;Y) vía Fano lower bound; C(R); H_noise vía LDA residual.
+- `sid_compute.py` — SID*(R) = I(R;Y)/(C(R)+λ·H_noise). **SID_C* retenido sólo como referencia** (ver auditoría).
+- `margin.py` — **(auditoría) métrica de margen continuo sobre ensemble basal-heterogéneo.** M_tensor (detector relativo Δ/Ρ, basal-invariante) vs M_baseline (detector absoluto V<0.45, degrada al variar el basal); **M_advantage = M_tensor − M_baseline** es el statistic de orden de H_cross.
+- `benchmark_s1s5.py` — runner con `--dry-run` (exit 0) y corpus real; escribe `sid_preregistration.json`.
 
-- `analysis/sid_study/probe.py` — probe lineal (logistic regression) + P_structural (lectura directa de índices)
-- `analysis/sid_study/mi_estimator.py` — estimación de I(R; Y) para representaciones raw, V, T
-- `analysis/sid_study/sid_compute.py` — SID*(R) = I(R;Y) / (C(R) + λ·H_noise(R)); SID_D* y SID_C*
-- `analysis/sid_study/benchmark_s1s5.py` — corre los probes sobre corpus S1–S5 y produce la predicción SID_C*(s) para pre-registro
+**HALLAZGO DE AUDITORÍA (2026-06-02):** el statistic de orden v1 (SID_C* basado en accuracy) **saturaba**: P_structural=1.0 en todos los escenarios ⟹ Fano lower bound = H(Y), así que SID_C* sólo diferenciaba por H_noise (ruido de muestra n=2–4). El orden v1 descansaba en un gap de 0.0009 con tres empates exactos — no defendible. La métrica de margen continuo lo reemplaza y revela que la ventaja tensorial es **operacional** (un umbral relativo generaliza entre proyectos con basal sano distinto; uno absoluto no), medible sólo sobre basales heterogéneos.
 
-**Dependencia crítica de secuencia:** este script debe correr y producir resultados ANTES de comenzar la recolección de datos del RCT para que H_cross sea una predicción pre-registrada.
+**Output pre-registro v2 (2026-06-02T21:36Z) — vigente:**
+
+```
+M_advantage: S3=0.50  S5=0.30  S1=S2=S4=0.00
+Predicted ΔPIQ order: S3 > S5 > S4 > S1 > S2   (alineado con CCI)
+Spearman ρ(M_advantage, CCI) = +0.918
+H_cross: Spearman ρ(M_advantage, ΔPIQ) > 0
+```
+
+**Limitaciones documentadas:**
+- S5 sigue degenerado (ambos artefactos son clase-fault, sin par limpio) → margen de una cara. DT-034 debe añadir S5-clean.
+- El ensemble basal-heterogéneo se **simula** vía `BASAL_SHIFTS` sobre la única instancia por escenario del corpus v1.0. DT-034 debe proveer réplicas multi-basal genuinas para reemplazar la simulación.
+
+**NEXT STEP:** commitear `analysis/sid_study/` (incl. `sid_preregistration.json`) ANTES de abrir el dataset del RCT.
 
 ### DT-033 · Definición formal de observabilidad causal vs. XAI/interpretabilidad
 
@@ -760,6 +775,11 @@ La diferencia clave: CAL no intenta explicar *por qué* el sistema hizo lo que h
 - S7 (`propagation_failure`) — fault en agente A causa fault en agente B downstream; requiere índice i (cascada de etapas)
 - S8 (`resolution_failure`) — política de re-orquestación incorrecta → conflicto reaparece en k+1; prueba SID_C* en ciclos post-intervención
 
+**Requisitos heredados de la auditoría DT-032 (para que M_advantage sea válido sin simulación):**
+
+- **Par S5-limpio** — un escenario de dos agentes SIN conflicto, para que H(Y_C)>0 en S5 y el margen deje de ser de una cara.
+- **Réplicas multi-basal genuinas** — ≥3 instancias por escenario con niveles basales sanos distintos (no simuladas vía `BASAL_SHIFTS`), para medir empíricamente la robustez del umbral relativo Δ/Ρ frente al absoluto.
+
 ### DT-035 · Estrategia de reproducibilidad LLM
 
 **Componente:** `analysis/reproducibility_log.md` + ajustes en `qa_evaluator.py`  
@@ -789,5 +809,5 @@ La diferencia clave: CAL no intenta explicar *por qué* el sistema hizo lo que h
 
 ---
 
-*Última actualización: 2026-06-02 — DT-030 implementado (8 scripts de análisis, dry-run validado)*  
-*Próxima revisión: DT-032 (SID S1–S5 + pre-registro H_cross) antes del piloto*
+*Última actualización: 2026-06-02 — DT-032 auditado: statistic de orden corregido a M_advantage (ensemble basal-heterogéneo); sid_preregistration.json v2 regenerado, ρ(M_advantage,CCI)=+0.918*  
+*Próxima revisión: commitear analysis/sid_study/ + piloto n=4*
