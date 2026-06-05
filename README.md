@@ -5,7 +5,7 @@
 
 **Author:** Juan Pablo Chancay  
 **Version:** v3.0 — Working Paper / Preprint  
-**Date:** May 2026  
+**Date:** May 2026 (last build update: June 2026)  
 **License:** [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/) (docs) · [AGPL-3.0](https://www.gnu.org/licenses/agpl-3.0.html) (src)
 
 > *This repository constitutes the public registration of the TCO-L2 framework and the Natural Cognitive Frontier (NCF) theoretical construct. TCO-L2 is Layer 2 of the CAL architecture — a four-level hierarchy spanning raw artifact streams (L0) to autonomous meta-inference (L4). The full research agenda is described in the CAL pre-paper: DOI [10.5281/zenodo.20430343](https://doi.org/10.5281/zenodo.20430343) (Zenodo, May 2026). arXiv submission pending endorsement.*
@@ -240,13 +240,34 @@ Formal annotation: [`Documentacion/CAL_Benchmark_v1.md`](Documentacion/CAL_Bench
 | `analysis/evaluator_reliability.py` | DT-024 variance + entropy analysis — σ < 0.05 confirmed via OpenRouter | ✅ |
 | `src/dashboard/src/experiment/ControlGroupViewer.tsx` | Control group raw viewer — multi-tab, correction form, timer | ✅ |
 
-### Stubs — 🟡 In Progress
+### REST API + Experiment Platform — ✅ Implemented
 
-| Module | Status |
-|--------|--------|
-| `src/tco_engine/` FastAPI + PostgreSQL REST API | 🟡 Stub |
-| `src/pipeline/` LangGraph graph + fault_injector | 🟡 Stub |
-| `src/dashboard/` React 18 + Recharts + TailwindCSS | 🟡 Stub |
+| Module | Description | Status |
+|--------|-------------|--------|
+| `src/tco_engine/api/` | FastAPI app — TCO core routes (`/vector`, `/tensor`, `/inference`, `/policy`) + CAL experiment platform (`/cal/api`). SQLite default (dev) / Postgres (prod). | ✅ |
+| `src/tco_engine/api/routes/experiment.py` | CAL platform: JWT register/login, informed consent, stratified group assignment, admin dashboard (list/override/invite), full session runner (scenario → task → tlx → policy → complete → results) with NCF computation | ✅ |
+| `src/tco_engine/core/auth.py` | JWT (HS256) + bcrypt, roles `participant`/`admin`, layer-agnostic (L2/L3/L4) | ✅ |
+| `src/tco_engine/core/randomization.py` | Experience-stratified group assignment (junior/mid/senior × control/experimental) | ✅ |
+| `src/tco_engine/scripts/create_admin.py` | Bootstrap / promote a CAL admin account | ✅ |
+| `src/dashboard/src/App.tsx` | React SPA — login/register/consent → participant dashboard → TaskSequencer → results, and admin dashboard. View state machine, role-gated. | ✅ |
+| `src/dashboard/src/experiment/TaskSequencer.tsx` | T1–T4 × S1–S5 runner; NASA-TLX form, interaction tracker, policy injection (experimental group) | ✅ |
+| `src/pipeline/` | LangGraph StateGraph (6 nodes, multi-cycle), fault_injector, S0–S5 scenarios, corpus.json generator | ✅ |
+
+### SID Study (Paper 1 — causal observability) — ✅ Implemented
+
+| Module | Description | Status |
+|--------|-------------|--------|
+| `analysis/sid_study/` | Semantic Information Decomposition over S1–S5: three representations (R_raw / R_V / R_T), structural + linear probes, Fano-bound MI, **M_advantage** ordering statistic over a heterogeneous-basal ensemble. Pre-registration artifact for H_cross. | ✅ |
+| `analysis/sid_study/sid_preregistration.json` | H_cross pre-registration (committed before RCT): predicted ΔPIQ order S3 > S5 > S4 > S1 > S2; Spearman ρ(M_advantage, CCI) = +0.92 | ✅ |
+| `analysis/` (H1/H2/H4/H5/H_OBS/ANCOVA/effect_sizes/visualizations) | Full statistical pipeline for the RCT, `--dry-run` validated | ✅ |
+
+### Pending before pilot
+
+| Item | Status |
+|------|--------|
+| DT-028 Phase 3 — production deploy (SMTP email, Postgres, `/cal` path on `sspa_infra`) | 🟡 Local deploy verified end-to-end; prod pending |
+| φ calibration result gate (Spearman ρ ≥ 0.75 vs ground truth) | 🟡 Suite implemented; result run pending |
+| Pilot n=4 | ⏳ Gated on the two above |
 
 ### Technology Stack
 
@@ -261,11 +282,33 @@ Formal annotation: [`Documentacion/CAL_Benchmark_v1.md`](Documentacion/CAL_Bench
 
 **REST API Endpoints:**
 ```
-POST /vector/compute       — φ: Compute V from artifact
-GET  /tensor/current       — Current tensor snapshot T[:,:,:,k_now]
-GET  /tensor/slice         — Named tensor slicing for dashboard views
-GET  /inference/latest     — I: Current {Ω, Δ, Ρ, Ξ}
-POST /policy/inject        — Receive P_new, extract PolicyIntent, re-orchestrate
+# TCO core
+POST /vector/compute        — φ: Compute V from artifact
+GET  /tensor/current        — Current tensor snapshot T[:,:,:,k_now]
+GET  /tensor/slice          — Named tensor slicing for dashboard views
+GET  /inference/latest      — I: Current {Ω, Δ, Ρ, Ξ}
+POST /policy/inject         — Receive P_new, extract PolicyIntent, re-orchestrate
+
+# CAL experiment platform (/cal/api)
+POST /cal/api/auth/register — Self-service registration + stratified group assignment
+POST /cal/api/auth/login    — JWT login (participant / admin)
+POST /cal/api/auth/consent  — Record informed consent
+GET  /cal/api/me            — Participant self-view (group, stratum, current session)
+GET  /cal/api/admin/participants            — Admin: list participants + completion
+POST /cal/api/admin/invite                  — Admin: schedule session + email invite
+GET  /cal/api/scenario/{id}                 — Load scenario artifacts (T1–T4 runner)
+POST /cal/api/session/{id}/{task|tlx|policy|complete}  — Session runner steps
+GET  /cal/api/session/{id}/results          — Task accuracy + NCF proxies
+```
+
+**Local dev run (no Docker):**
+```
+# Backend — SQLite default, runs without Postgres/Redis
+cd src && uvicorn tco_engine.api.main:app --port 8000
+# Frontend — Vite proxies /cal/api to the backend
+cd src/dashboard && npm run dev      # http://localhost:3000
+# Create an admin account
+python -m tco_engine.scripts.create_admin --email admin@example.com --password ******** --name Admin
 ```
 
 ---

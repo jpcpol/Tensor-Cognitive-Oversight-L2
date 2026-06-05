@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
-const BACKEND = 'http://localhost:8000'
+const BACKEND = process.env.VITE_BACKEND_URL ?? 'http://localhost:8000'
 
 // All paths that map directly to the TCO Engine backend.
 // The SPA lives at /cal/* in production; backend API routes are at /cal/api/*,

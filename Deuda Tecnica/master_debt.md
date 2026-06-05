@@ -37,7 +37,7 @@ que deberá abordarse antes de la submission final o el experimento completo.
 | DT-025 | Paper — Reencuadrar vector como "~orthogonal supervisory dims" | Importante | Implementado |
 | DT-026 | Experimento — 4 proxies NCF operacionalizados en infra | Importante | Implementado |
 | DT-027 | Paper — Reencuadre sistemático "supervisory estimators" | Importante | Implementado |
-| DT-028 | Plataforma web experimento — researchlab.aural-syncro.com.ar/cal | Importante | Pendiente |
+| DT-028 | Plataforma web experimento — researchlab.aural-syncro.com.ar/cal | Importante | Fases 1–2 ✅ · Fase 3 (deploy prod) pendiente |
 | DT-029 | Script generador de informe post-piloto (`analysis/pilot_report.py`) | Importante | Pendiente |
 | DT-030 | Scripts de análisis estadístico H1–H5 + H_OBS + ANCOVA + effect sizes | **Crítica** | Implementado |
 | DT-031 | Test suite real para core (vectorizer, aggregator, inference, qa_evaluator) | **Crítica** | Implementado |
@@ -556,9 +556,24 @@ Cambios necesarios:
 ### DT-028 · Plataforma web experimento — researchlab.aural-syncro.com.ar/cal
 
 **Componente:** Servicio TCO propio (FastAPI + React) en red `sspa_infra`, path `/cal`  
-**Estado:** Pendiente — **iniciar antes del piloto** (Semana 5–7 build → Semana 7 piloto n=4)  
+**Estado:** Fases 1–2 ✅ Implementadas · Fase 3 (deploy prod) pendiente  
 **Prioridad:** Importante — habilita n=40 sin coordinación presencial  
 **Spec de implementación:** [`Documentacion/DT-028_web_platform_spec.md`](../Documentacion/DT-028_web_platform_spec.md)
+
+**Verificación deploy local (2026-06-04):** backend (uvicorn, SQLite, sin Docker — puerto 8000 ocupado por SSPA → usado 8010) + frontend (Vite, proxy `/cal/api` → backend). Probados end-to-end por API y SPA:
+
+- **Participante:** registro con asignación estratificada (6 años → estrato `mid`, grupo `experimental`) → consent → carga escenario S1 (código real del pipeline) → runner completo (2 tasks acc 1.0, policy inyectada, TLX post_t2/post_t4, complete) → NCF computado (`working_memory_saturation=51.25`).
+- **Admin:** listado de participantes con todos los campos, override de grupo, invitación (crea sesión `is_pilot`).
+- Frontend: `tsc --noEmit` limpio (exit 0); Vite transforma `App.tsx`/`main.tsx` sin error; proxy verificado (login admin atraviesa :3000 → :8010).
+
+**Cambio de código del deploy:** `vite.config.ts` ahora acepta `VITE_BACKEND_URL` (default sigue 8000) para apuntar el proxy a un puerto alterno.
+
+**Pendiente Fase 3 (deploy prod):**
+
+- Postgres/Timescale en `sspa_infra` (override `DATABASE_URL`) en vez de SQLite.
+- SMTP (`GMAIL_*`) — sin él las invitaciones quedan `scheduled` en vez de `sent` (email_sent=false).
+- Servir la SPA bajo `/cal` detrás del reverse proxy; `SECRET_KEY` de producción.
+- **Higiene:** `create_admin.py` no valida el email con pydantic → permite crear cuentas con TLD reservado (`.test`) que luego no pueden loguear vía API (`EmailStr` las rechaza). Añadir validación + limpiar la cuenta huérfana `revisor@tco.test` creada en la prueba.
 
 **Decisiones cerradas (2026-05-31):**
 - Topología: servicio TCO propio en `/cal` (no embebido en Research Lab); reutiliza Postgres/Timescale + patrón email SMTP
@@ -809,5 +824,5 @@ La diferencia clave: CAL no intenta explicar *por qué* el sistema hizo lo que h
 
 ---
 
-*Última actualización: 2026-06-02 — DT-032 auditado: statistic de orden corregido a M_advantage (ensemble basal-heterogéneo); sid_preregistration.json v2 regenerado, ρ(M_advantage,CCI)=+0.918*  
-*Próxima revisión: commitear analysis/sid_study/ + piloto n=4*
+*Última actualización: 2026-06-04 — DT-028 Fases 1–2 verificadas en deploy local end-to-end (participante + admin); docs sincronizadas (README, CLAUDE.md, wiki). DT-032 commiteado (pre-registro H_cross con M_advantage).*  
+*Próxima revisión: DT-028 Fase 3 (deploy prod + SMTP + Postgres) · gate calibración φ (ρ≥0.75) · piloto n=4*

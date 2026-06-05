@@ -23,12 +23,12 @@ Layer 1 — AI Generation: code_agent, design_agent, deploy_agent, test_agent
 
 ## Componentes y stack
 
-| Componente          | Tecnología                              | Puerto | Estado      |
-| ------------------- | --------------------------------------- | ------ | ----------- |
-| `tco_engine`        | FastAPI + TimescaleDB + SonarQube + Bandit | 8000  | 0% — stubs  |
-| `pipeline`          | LangGraph + Claude API (sonnet-4-6)     | —      | 0% — stubs  |
-| `dashboard`         | React 18 + Recharts + TailwindCSS       | 3000   | 0% — stubs  |
-| Infraestructura     | Docker Compose (5 servicios)            | —      | Configurado |
+| Componente      | Tecnología                                                  | Puerto | Estado                                       |
+| --------------- | ---------------------------------------------------------- | ------ | -------------------------------------------- |
+| `tco_engine`    | FastAPI + SQLite(dev)/Postgres(prod) + Redis + Bandit/Radon | 8000   | ✅ core + API + plataforma `/cal/api`         |
+| `pipeline`      | LangGraph + Claude API (sonnet-4-6)                        | —      | ✅ graph + fault_injector + S0–S5             |
+| `dashboard`     | React 18 + Vite + Recharts + TailwindCSS                   | 3000   | ✅ SPA experimento (login/admin/runner)       |
+| Infraestructura | Docker Compose (5 servicios)                               | —      | Configurado · dev corre sin Docker (SQLite)  |
 
 ---
 
@@ -91,7 +91,7 @@ Layer 1 — AI Generation: code_agent, design_agent, deploy_agent, test_agent
 
 ## Estado del proyecto
 
-**Working paper v3.0** — Abril 2026.
+**Working paper v3.0** — última actualización de build: Junio 2026.
 
 | Módulo                          | Estado          |
 | ------------------------------- | --------------- |
@@ -104,9 +104,13 @@ Layer 1 — AI Generation: code_agent, design_agent, deploy_agent, test_agent
 | `db/cache.py`                   | ✅ Implementado  |
 | `pipeline/agents/qa_agent.py`   | ✅ Implementado  |
 | `Documentacion/TCO_LaTeX/`      | ✅ Draft ACM     |
-| `tco_engine API (FastAPI)`      | 🟡 Stubs        |
-| `pipeline/graph.py`             | 🟡 Stubs        |
-| `dashboard/`                    | 🟡 Stubs        |
+| `tco_engine API (FastAPI)`      | ✅ core + `/cal/api` plataforma experimento |
+| `pipeline/graph.py`             | ✅ Implementado  |
+| `dashboard/` (SPA experimento)  | ✅ login/admin/runner |
+| `analysis/sid_study/`           | ✅ SID Study + pre-registro H_cross (M_advantage) |
+| `analysis/` (H1–H5, H_OBS, ANCOVA) | ✅ pipeline estadístico `--dry-run` |
+
+**Deploy local verificado (Junio 2026):** backend (uvicorn, SQLite) + frontend (Vite) levantados; flujo participante (registro estratificado → consent → runner T1–T4 → NCF) y admin (listado → invite) probados end-to-end. Pendiente: DT-028 Fase 3 (deploy prod + SMTP), gate de calibración φ (ρ≥0.75), piloto n=4.
 
 Roadmap de 10 semanas: Sem 1–4 Build → Sem 5 Pilot → Sem 6 Calibración → Sem 7–8 Experimento → Sem 9–10 Análisis + Writing.
 
