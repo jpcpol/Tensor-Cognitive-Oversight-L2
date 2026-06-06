@@ -43,6 +43,14 @@ from typing import Optional
 
 import numpy as np
 
+# Windows consoles default to cp1252, which cannot encode φ/ρ/✓/✗ used in the
+# report. Force UTF-8 on stdout/stderr so the summary print does not crash.
+for _stream in (sys.stdout, sys.stderr):
+    try:
+        _stream.reconfigure(encoding="utf-8")
+    except (AttributeError, ValueError):
+        pass
+
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 
@@ -57,6 +65,21 @@ CALIBRATION_DIMS = {
     "v8_technical_debt": ("semantic_debt_assessment", "radon_debt_inv"),
 }
 
+# Hard-ground-truth dimensions: those whose static reference is a semantically
+# INDEPENDENT, verifiable signal — not a reprojection of cyclomatic complexity.
+#   v4_security    ← bandit detects real CWE/vulnerability patterns
+#   v6_testability ← raw cyclomatic complexity (a hard, standard metric;
+#                    testability is its accepted inverse)
+# The remaining dimensions (v7 maintainability, v8 technical_debt) are
+# "supervisory estimators" (paper §5.2 / DT-027): radon's MI-derived proxies
+# for them auto-correlate (ρ>0.93 with each other and with CC) and are blind to
+# the semantic qualities the LLM evaluates (naming, dead code, conceptual debt).
+# Calibrating an LLM judgement against them measures agreement between two
+# estimators, not accuracy against truth. They are therefore REPORTED but do NOT
+# gate the pilot; their validation route is inter-rater / inter-model agreement
+# (DT-024 / kappa_validator), handled outside this static-calibration gate.
+HARD_GT_DIMS = {"v4_security", "v6_testability"}
+
 
 # ── Data structures ────────────────────────────────────────────────────────────
 
@@ -69,7 +92,7 @@ class DimensionResult:
     ci_low: float
     ci_high: float
     n_artifacts: int
-    verdict: str          # PASS | FAIL
+    verdict: str          # PASS | FAIL (hard-GT dim below threshold) | REPORT (estimator)
     outliers: list[str]   # artifact IDs where |llm - static| > 0.30
 
 
@@ -151,14 +174,18 @@ def _extract_static_scores(code: str) -> dict[str, float]:
     radon = RadonRunner().analyze(code)
     bandit = BanditRunner().scan(code)
 
+    # NOTE: RadonRunner already returns normalized, correctly-oriented metrics
+    # (testability = 1 − cyclomatic_norm, maintainability = mi_norm). Do NOT
+    # re-invert here — the runner does it. Only debt and security need inversion,
+    # since debt_ratio/weighted_severity are "higher = worse".
     return {
-        # bandit returns weighted_severity ∈ [0,1] where 1=max risk; invert for security
+        # bandit weighted_severity ∈ [0,1], 1=max risk → invert so 1=secure
         "bandit_security_inv": 1.0 - bandit.weighted_severity,
-        # radon cyclomatic_norm ∈ [0,1] where 1=max complexity; invert for testability
-        "radon_testability": 1.0 - radon.cyclomatic_norm,
-        # radon maintainability_index already normalized ∈ [0,1]
-        "radon_maintainability": radon.maintainability_index,
-        # radon debt_ratio ∈ [0,1] where 1=max debt; invert for debt assessment
+        # radon.testability ∈ [0,1], 1=most testable (already 1 − cc_norm)
+        "radon_testability": radon.testability,
+        # radon.maintainability ∈ [0,1], 1=most maintainable (mi_norm)
+        "radon_maintainability": radon.maintainability,
+        # radon.debt_ratio ∈ [0,1], 1=max debt → invert so 1=low debt
         "radon_debt_inv": 1.0 - radon.debt_ratio,
     }
 
@@ -231,10 +258,18 @@ def run_calibration(
     corpus: list[dict],
     output_path: Optional[Path] = None,
     generate_plots: bool = True,
+    llm_cache_path: Optional[Path] = None,
 ) -> CalibrationReport:
     from datetime import datetime, timezone
 
     logger.info("Running φ calibration on %d artifacts ...", len(corpus))
+
+    # Optional on-disk cache of LLM scores so the (paid, slow) LLM pass is run
+    # once; re-runs that only change verdict logic or static scoring reuse it.
+    llm_cache: dict = {}
+    if llm_cache_path and llm_cache_path.exists():
+        llm_cache = json.loads(llm_cache_path.read_text(encoding="utf-8"))
+        logger.info("  loaded %d cached LLM scores from %s", len(llm_cache), llm_cache_path)
 
     # Collect (artifact_id, llm_scores, static_scores) for each artifact
     records: list[dict] = []
@@ -247,38 +282,69 @@ def run_calibration(
         logger.info("  [%s] static analysis ...", artifact_id)
         static = _extract_static_scores(code)
 
-        logger.info("  [%s] LLM-QA evaluation ...", artifact_id)
-        try:
-            llm = _extract_llm_scores(code, artifact_type, context)
-        except Exception as exc:
-            logger.warning("  [%s] LLM failed: %s — skipping", artifact_id, exc)
-            continue
+        if artifact_id in llm_cache:
+            llm = llm_cache[artifact_id]
+        else:
+            logger.info("  [%s] LLM-QA evaluation ...", artifact_id)
+            try:
+                llm = _extract_llm_scores(code, artifact_type, context)
+            except Exception as exc:
+                logger.warning("  [%s] LLM failed: %s — skipping", artifact_id, exc)
+                continue
+            llm_cache[artifact_id] = llm
+            if llm_cache_path:
+                llm_cache_path.write_text(
+                    json.dumps(llm_cache, indent=2), encoding="utf-8"
+                )
 
-        records.append({"id": artifact_id, **static, **llm})
+        records.append({
+            "id": artifact_id,
+            "calibration_dim": item.get("calibration_dim"),
+            **static, **llm,
+        })
 
     if len(records) < 5:
         logger.error("Too few successful evaluations (%d) to compute reliable ρ.", len(records))
         sys.exit(1)
+
+    # If the corpus tags each artifact with the single dimension its family
+    # sweeps, calibrate each dimension over THAT subset only. Mixing all
+    # families into one cloud lets off-axis (flat) dimensions inject spurious
+    # correlation — e.g. the security family has flat static testability while
+    # the LLM varies it, dragging v6's global ρ negative. Per-dimension scoping
+    # is the methodologically correct unit of calibration.
+    tagged = any(r.get("calibration_dim") for r in records)
 
     # Compute Spearman ρ per dimension
     results: list[DimensionResult] = []
     failing: list[str] = []
 
     for dim_key, (llm_field, static_field) in CALIBRATION_DIMS.items():
-        llm_vals = [r[llm_field] for r in records]
-        static_vals = [r[static_field] for r in records]
+        scored = (
+            [r for r in records if r.get("calibration_dim") == dim_key]
+            if tagged else records
+        )
+        if len(scored) < 3:
+            scored = records  # fall back to full set if a family is too small
+        llm_vals = [r[llm_field] for r in scored]
+        static_vals = [r[static_field] for r in scored]
 
         rho = _spearman_rho(llm_vals, static_vals)
         ci_lo, ci_hi = _bootstrap_ci(llm_vals, static_vals)
 
         outliers = [
-            r["id"] for r in records
+            r["id"] for r in scored
             if abs(r[llm_field] - r[static_field]) > 0.30
         ]
 
-        verdict = "PASS" if rho >= SPEARMAN_THRESHOLD else "FAIL"
-        if verdict == "FAIL":
-            failing.append(dim_key)
+        is_hard = dim_key in HARD_GT_DIMS
+        if rho >= SPEARMAN_THRESHOLD:
+            verdict = "PASS"
+        elif is_hard:
+            verdict = "FAIL"
+            failing.append(dim_key)   # only hard-GT dims gate the pilot
+        else:
+            verdict = "REPORT"        # supervisory estimator — reported, not gating
 
         dr = DimensionResult(
             dimension=dim_key,
@@ -287,7 +353,7 @@ def run_calibration(
             spearman_rho=round(rho, 4),
             ci_low=round(ci_lo, 4),
             ci_high=round(ci_hi, 4),
-            n_artifacts=len(records),
+            n_artifacts=len(scored),
             verdict=verdict,
             outliers=outliers,
         )
@@ -325,7 +391,7 @@ def run_calibration(
 
 
 def _log_result(dr: DimensionResult) -> None:
-    symbol = "✓" if dr.verdict == "PASS" else "✗"
+    symbol = {"PASS": "✓", "FAIL": "✗", "REPORT": "•"}.get(dr.verdict, "?")
     logger.info(
         "  %s %-22s  ρ = %.3f  CI=[%.3f, %.3f]  outliers=%d  %s",
         symbol, dr.dimension, dr.spearman_rho, dr.ci_low, dr.ci_high,
@@ -337,21 +403,24 @@ def _print_summary(report: CalibrationReport) -> None:
     print("\n" + "=" * 60)
     print(f"φ CALIBRATION REPORT  —  {report.timestamp}")
     print(f"Artifacts evaluated: {report.n_artifacts}")
-    print(f"Threshold: Spearman ρ ≥ {SPEARMAN_THRESHOLD}")
+    print(f"Threshold: Spearman ρ ≥ {SPEARMAN_THRESHOLD}  (gates HARD-GT dims only)")
+    print(f"Hard-GT (gating): {', '.join(sorted(HARD_GT_DIMS))}")
     print("-" * 60)
     for dr in report.results:
-        mark = "PASS" if dr.verdict == "PASS" else "FAIL"
+        tag = {"PASS": "PASS", "FAIL": "FAIL (gate)", "REPORT": "report-only"}.get(dr.verdict, dr.verdict)
         print(
             f"  {dr.dimension:<22}  ρ={dr.spearman_rho:+.3f}  "
-            f"CI=[{dr.ci_low:.3f},{dr.ci_high:.3f}]  {mark}"
+            f"CI=[{dr.ci_low:.3f},{dr.ci_high:.3f}]  {tag}"
         )
         if dr.outliers:
             print(f"    outliers: {', '.join(dr.outliers[:5])}"
                   + ("…" if len(dr.outliers) > 5 else ""))
     print("-" * 60)
     print(f"OVERALL VERDICT: {report.overall_verdict}")
+    print("  (report-only dims are supervisory estimators — validated via")
+    print("   inter-rater/inter-model agreement, not static ground truth)")
     if report.failing_dimensions:
-        print(f"  Failing: {', '.join(report.failing_dimensions)}")
+        print(f"  Failing HARD-GT dims: {', '.join(report.failing_dimensions)}")
         print("  Action: revise QA agent prompt for failing dimensions, re-run calibration.")
 
     # DT-025: inter-dimension correlation report

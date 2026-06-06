@@ -200,8 +200,11 @@ class EvaluationMetrics(BaseModel):
     # Calibration fields — compared against bandit/radon in phi_calibration.py
     semantic_security:        float = Field(ge=0.0, le=1.0)
     semantic_debt_assessment: float = Field(ge=0.0, le=1.0)
-    reasoning:                str
-    confidence_self_assessment: float = Field(ge=0.0, le=1.0)
+    reasoning:                str = ""
+    # Optional: the model does not always emit it; default to neutral so a
+    # missing confidence field does not force the whole evaluation to fallback
+    # (which would inject artificial outliers into calibration).
+    confidence_self_assessment: float = Field(default=0.5, ge=0.0, le=1.0)
 
     @property
     def test_pass_rate(self) -> float:

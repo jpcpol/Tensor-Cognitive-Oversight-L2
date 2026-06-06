@@ -92,10 +92,19 @@ class RadonRunner:
             avg_vol = 1000.0
         hv_norm = min(1.0, avg_vol / MAX_HALSTEAD_VOLUME)
 
+        # Technical debt is multifactorial: it must NOT be a pure function of
+        # the Maintainability Index, or it becomes algebraically identical to
+        # `maintainability` (debt = 1 − mi ≡ maintainability), making the two
+        # dimensions uncalibratable against distinct ground truth. We compose
+        # debt from the structural drivers radon exposes — cyclomatic complexity
+        # and Halstead volume — modulated by (1 − MI). A unit with high MI but
+        # high branching/volume still accrues debt, which (1 − MI) alone misses.
+        debt = 0.50 * cc_norm + 0.30 * hv_norm + 0.20 * max(0.0, 1.0 - mi_norm)
+
         return RadonMetrics(
             cyclomatic_complexity=cc_norm,
             halstead_volume=hv_norm,
-            debt_ratio=max(0.0, 1.0 - mi_norm),
+            debt_ratio=min(1.0, max(0.0, debt)),
             log_coverage=_log_density(code),
             maintainability=mi_norm,
             testability=max(0.0, 1.0 - cc_norm),

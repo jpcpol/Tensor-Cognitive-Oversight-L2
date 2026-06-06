@@ -1,0 +1,142 @@
+[
+  {
+    "id": "sec_00_clean",
+    "code": "import hashlib\nimport hmac\nimport logging\nfrom sqlalchemy import text\n\nlogger = logging.getLogger(__name__)\n\n\ndef get_user(db, username: str):\n    \"\"\"Parameterized query, no secrets, safe comparison.\"\"\"\n    logger.info(\"Lookup user %s\", username)\n    row = db.execute(\n        text(\"SELECT id, pw_hash FROM users WHERE username = :u\"),\n        {\"u\": username},\n    ).fetchone()\n    return dict(row) if row else None\n\n\ndef verify(stored_hash: str, candidate: str) -> bool:\n    digest = hashlib.sha256(candidate.encode()).hexdigest()\n    return hmac.compare_digest(stored_hash, digest)\n",
+    "artifact_type": "python_code",
+    "context": "Authentication / data-access module (security sweep)",
+    "calibration_dim": "v4_security"
+  },
+  {
+    "id": "sec_01_low",
+    "code": "import subprocess\nimport logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef list_dir(path: str):\n    \"\"\"Uses subprocess with a fixed arg list — low risk but flagged.\"\"\"\n    logger.info(\"Listing %s\", path)\n    result = subprocess.run([\"ls\", \"-la\", path], capture_output=True, text=True)\n    return result.stdout\n",
+    "artifact_type": "python_code",
+    "context": "Authentication / data-access module (security sweep)",
+    "calibration_dim": "v4_security"
+  },
+  {
+    "id": "sec_02_medium",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef make_token(seed: str):\n    \"\"\"Weak randomness for a token — medium severity.\"\"\"\n    import random\n    logger.info(\"Generating token\")\n    return \"\".join(random.choice(\"0123456789abcdef\") for _ in range(16))\n\n\ndef load_config(path: str):\n    with open(path) as f:\n        return eval(f.read())  # noqa — insecure eval, medium/high\n",
+    "artifact_type": "python_code",
+    "context": "Authentication / data-access module (security sweep)",
+    "calibration_dim": "v4_security"
+  },
+  {
+    "id": "sec_03_high",
+    "code": "import os\n\n\ndef authenticate(db, username: str, password: str):\n    query = \"SELECT * FROM users WHERE name = '\" + username + \\\n            \"' AND pw = '\" + password + \"'\"\n    return db.execute(query).fetchone()\n\n\ndef run_cmd(user_input: str):\n    os.system(\"process_file \" + user_input)\n",
+    "artifact_type": "python_code",
+    "context": "Authentication / data-access module (security sweep)",
+    "calibration_dim": "v4_security"
+  },
+  {
+    "id": "sec_04_critical",
+    "code": "import os\nimport pickle\n\n\ndef login(db, u, p):\n    q = \"SELECT * FROM users WHERE name='\" + u + \"' AND pw='\" + p + \"'\"\n    return db.execute(q).fetchall()\n\n\ndef deserialize(blob):\n    return pickle.loads(blob)\n\n\ndef shell(cmd):\n    os.system(cmd)\n\n\nPASSWORD = \"admin123\"\nSECRET_KEY = \"hardcoded-secret-do-not-do-this\"\n",
+    "artifact_type": "python_code",
+    "context": "Authentication / data-access module (security sweep)",
+    "calibration_dim": "v4_security"
+  },
+  {
+    "id": "cpx_00_flat",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef classify(value: int, mode: str) -> str:\n    \"\"\"Branch-heavy classifier; cyclomatic complexity scales with arms.\"\"\"\n    logger.debug(\"classify %s %s\", value, mode)\n    if value < 0:\n        return 'negative'\n    elif value == 0 and mode == 'm0':\n        return 'case_0'\n    else:\n        return 'default'\n",
+    "artifact_type": "python_code",
+    "context": "Input classifier (cyclomatic complexity sweep)",
+    "calibration_dim": "v6_testability"
+  },
+  {
+    "id": "cpx_01_low",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef classify(value: int, mode: str) -> str:\n    \"\"\"Branch-heavy classifier; cyclomatic complexity scales with arms.\"\"\"\n    logger.debug(\"classify %s %s\", value, mode)\n    if value < 0:\n        return 'negative'\n    elif value == 0 and mode == 'm0':\n        return 'case_0'\n    elif value == 1 and mode == 'm1':\n        return 'case_1'\n    elif value == 2 and mode == 'm2':\n        return 'case_2'\n    elif value == 3 and mode == 'm0':\n        return 'case_3'\n    else:\n        return 'default'\n",
+    "artifact_type": "python_code",
+    "context": "Input classifier (cyclomatic complexity sweep)",
+    "calibration_dim": "v6_testability"
+  },
+  {
+    "id": "cpx_02_mid",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef classify(value: int, mode: str) -> str:\n    \"\"\"Branch-heavy classifier; cyclomatic complexity scales with arms.\"\"\"\n    logger.debug(\"classify %s %s\", value, mode)\n    if value < 0:\n        return 'negative'\n    elif value == 0 and mode == 'm0':\n        return 'case_0'\n    elif value == 1 and mode == 'm1':\n        return 'case_1'\n    elif value == 2 and mode == 'm2':\n        return 'case_2'\n    elif value == 3 and mode == 'm0':\n        return 'case_3'\n    elif value == 4 and mode == 'm1':\n        return 'case_4'\n    elif value == 5 and mode == 'm2':\n        return 'case_5'\n    elif value == 6 and mode == 'm0':\n        return 'case_6'\n    elif value == 7 and mode == 'm1':\n        return 'case_7'\n    elif value == 8 and mode == 'm2':\n        return 'case_8'\n    else:\n        return 'default'\n",
+    "artifact_type": "python_code",
+    "context": "Input classifier (cyclomatic complexity sweep)",
+    "calibration_dim": "v6_testability"
+  },
+  {
+    "id": "cpx_03_high",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef classify(value: int, mode: str) -> str:\n    \"\"\"Branch-heavy classifier; cyclomatic complexity scales with arms.\"\"\"\n    logger.debug(\"classify %s %s\", value, mode)\n    if value < 0:\n        return 'negative'\n    elif value == 0 and mode == 'm0':\n        return 'case_0'\n    elif value == 1 and mode == 'm1':\n        return 'case_1'\n    elif value == 2 and mode == 'm2':\n        return 'case_2'\n    elif value == 3 and mode == 'm0':\n        return 'case_3'\n    elif value == 4 and mode == 'm1':\n        return 'case_4'\n    elif value == 5 and mode == 'm2':\n        return 'case_5'\n    elif value == 6 and mode == 'm0':\n        return 'case_6'\n    elif value == 7 and mode == 'm1':\n        return 'case_7'\n    elif value == 8 and mode == 'm2':\n        return 'case_8'\n    elif value == 9 and mode == 'm0':\n        return 'case_9'\n    elif value == 10 and mode == 'm1':\n        return 'case_10'\n    elif value == 11 and mode == 'm2':\n        return 'case_11'\n    elif value == 12 and mode == 'm0':\n        return 'case_12'\n    elif value == 13 and mode == 'm1':\n        return 'case_13'\n    elif value == 14 and mode == 'm2':\n        return 'case_14'\n    elif value == 15 and mode == 'm0':\n        return 'case_15'\n    else:\n        return 'default'\n",
+    "artifact_type": "python_code",
+    "context": "Input classifier (cyclomatic complexity sweep)",
+    "calibration_dim": "v6_testability"
+  },
+  {
+    "id": "cpx_04_extreme",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef classify(value: int, mode: str) -> str:\n    \"\"\"Branch-heavy classifier; cyclomatic complexity scales with arms.\"\"\"\n    logger.debug(\"classify %s %s\", value, mode)\n    if value < 0:\n        return 'negative'\n    elif value == 0 and mode == 'm0':\n        return 'case_0'\n    elif value == 1 and mode == 'm1':\n        return 'case_1'\n    elif value == 2 and mode == 'm2':\n        return 'case_2'\n    elif value == 3 and mode == 'm0':\n        return 'case_3'\n    elif value == 4 and mode == 'm1':\n        return 'case_4'\n    elif value == 5 and mode == 'm2':\n        return 'case_5'\n    elif value == 6 and mode == 'm0':\n        return 'case_6'\n    elif value == 7 and mode == 'm1':\n        return 'case_7'\n    elif value == 8 and mode == 'm2':\n        return 'case_8'\n    elif value == 9 and mode == 'm0':\n        return 'case_9'\n    elif value == 10 and mode == 'm1':\n        return 'case_10'\n    elif value == 11 and mode == 'm2':\n        return 'case_11'\n    elif value == 12 and mode == 'm0':\n        return 'case_12'\n    elif value == 13 and mode == 'm1':\n        return 'case_13'\n    elif value == 14 and mode == 'm2':\n        return 'case_14'\n    elif value == 15 and mode == 'm0':\n        return 'case_15'\n    elif value == 16 and mode == 'm1':\n        return 'case_16'\n    elif value == 17 and mode == 'm2':\n        return 'case_17'\n    elif value == 18 and mode == 'm0':\n        return 'case_18'\n    elif value == 19 and mode == 'm1':\n        return 'case_19'\n    elif value == 20 and mode == 'm2':\n        return 'case_20'\n    elif value == 21 and mode == 'm0':\n        return 'case_21'\n    elif value == 22 and mode == 'm1':\n        return 'case_22'\n    elif value == 23 and mode == 'm2':\n        return 'case_23'\n    elif value == 24 and mode == 'm0':\n        return 'case_24'\n    elif value == 25 and mode == 'm1':\n        return 'case_25'\n    else:\n        return 'default'\n",
+    "artifact_type": "python_code",
+    "context": "Input classifier (cyclomatic complexity sweep)",
+    "calibration_dim": "v6_testability"
+  },
+  {
+    "id": "dbt_00_tiny",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef handle_0(data):\n    return sum(x * 1 for x in data)\n\n\n",
+    "artifact_type": "python_code",
+    "context": "Batch processing module (technical-debt sweep)",
+    "calibration_dim": "v8_technical_debt"
+  },
+  {
+    "id": "dbt_01_small",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef handle_0(data):\n    return sum(x * 1 for x in data)\n\n\ndef handle_1(data):\n    return sum(x * 2 for x in data)\n\n\ndef handle_2(data):\n    return sum(x * 3 for x in data)\n\n\n",
+    "artifact_type": "python_code",
+    "context": "Batch processing module (technical-debt sweep)",
+    "calibration_dim": "v8_technical_debt"
+  },
+  {
+    "id": "dbt_02_medium",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef handle_0(data, flags):\n    total = 0\n    for x in data:\n        if x > 0:\n            if flags.get('a'):\n                total += x * 1\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_1(data, flags):\n    total = 0\n    for x in data:\n        if x > 1:\n            if flags.get('a'):\n                total += x * 2\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_2(data, flags):\n    total = 0\n    for x in data:\n        if x > 2:\n            if flags.get('a'):\n                total += x * 3\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_3(data, flags):\n    total = 0\n    for x in data:\n        if x > 3:\n            if flags.get('a'):\n                total += x * 4\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_4(data, flags):\n    total = 0\n    for x in data:\n        if x > 4:\n            if flags.get('a'):\n                total += x * 5\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\n",
+    "artifact_type": "python_code",
+    "context": "Batch processing module (technical-debt sweep)",
+    "calibration_dim": "v8_technical_debt"
+  },
+  {
+    "id": "dbt_03_large",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef handle_0(data, flags):\n    total = 0\n    for x in data:\n        if x > 0:\n            if flags.get('a'):\n                total += x * 1\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_1(data, flags):\n    total = 0\n    for x in data:\n        if x > 1:\n            if flags.get('a'):\n                total += x * 2\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_2(data, flags):\n    total = 0\n    for x in data:\n        if x > 2:\n            if flags.get('a'):\n                total += x * 3\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_3(data, flags):\n    total = 0\n    for x in data:\n        if x > 3:\n            if flags.get('a'):\n                total += x * 4\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_4(data, flags):\n    total = 0\n    for x in data:\n        if x > 4:\n            if flags.get('a'):\n                total += x * 5\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_5(data, flags):\n    total = 0\n    for x in data:\n        if x > 5:\n            if flags.get('a'):\n                total += x * 6\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_6(data, flags):\n    total = 0\n    for x in data:\n        if x > 6:\n            if flags.get('a'):\n                total += x * 7\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_7(data, flags):\n    total = 0\n    for x in data:\n        if x > 7:\n            if flags.get('a'):\n                total += x * 8\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_8(data, flags):\n    total = 0\n    for x in data:\n        if x > 8:\n            if flags.get('a'):\n                total += x * 9\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\n",
+    "artifact_type": "python_code",
+    "context": "Batch processing module (technical-debt sweep)",
+    "calibration_dim": "v8_technical_debt"
+  },
+  {
+    "id": "dbt_04_sprawl",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef handle_0(data, flags):\n    total = 0\n    for x in data:\n        if x > 0:\n            if flags.get('a'):\n                total += x * 1\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_1(data, flags):\n    total = 0\n    for x in data:\n        if x > 1:\n            if flags.get('a'):\n                total += x * 2\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_2(data, flags):\n    total = 0\n    for x in data:\n        if x > 2:\n            if flags.get('a'):\n                total += x * 3\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_3(data, flags):\n    total = 0\n    for x in data:\n        if x > 3:\n            if flags.get('a'):\n                total += x * 4\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_4(data, flags):\n    total = 0\n    for x in data:\n        if x > 4:\n            if flags.get('a'):\n                total += x * 5\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_5(data, flags):\n    total = 0\n    for x in data:\n        if x > 5:\n            if flags.get('a'):\n                total += x * 6\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_6(data, flags):\n    total = 0\n    for x in data:\n        if x > 6:\n            if flags.get('a'):\n                total += x * 7\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_7(data, flags):\n    total = 0\n    for x in data:\n        if x > 7:\n            if flags.get('a'):\n                total += x * 8\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_8(data, flags):\n    total = 0\n    for x in data:\n        if x > 8:\n            if flags.get('a'):\n                total += x * 9\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_9(data, flags):\n    total = 0\n    for x in data:\n        if x > 9:\n            if flags.get('a'):\n                total += x * 10\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_10(data, flags):\n    total = 0\n    for x in data:\n        if x > 10:\n            if flags.get('a'):\n                total += x * 11\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_11(data, flags):\n    total = 0\n    for x in data:\n        if x > 11:\n            if flags.get('a'):\n                total += x * 12\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_12(data, flags):\n    total = 0\n    for x in data:\n        if x > 12:\n            if flags.get('a'):\n                total += x * 13\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\ndef handle_13(data, flags):\n    total = 0\n    for x in data:\n        if x > 13:\n            if flags.get('a'):\n                total += x * 14\n            elif flags.get('b'):\n                total -= x\n            else:\n                total += x\n    return total\n\n\n",
+    "artifact_type": "python_code",
+    "context": "Batch processing module (technical-debt sweep)",
+    "calibration_dim": "v8_technical_debt"
+  },
+  {
+    "id": "mnt_00_clean",
+    "code": "import logging\n\nlogger = logging.getLogger(__name__)\n\n\ndef average_scores(scores: list[float]) -> float:\n    \"\"\"Return the mean score, or 0.0 for an empty list.\"\"\"\n    if not scores:\n        return 0.0\n    return sum(scores) / len(scores)\n",
+    "artifact_type": "python_code",
+    "context": "Score aggregation utility (maintainability sweep)",
+    "calibration_dim": "v7_maintainability"
+  },
+  {
+    "id": "mnt_01_ok",
+    "code": "def average_scores(scores):\n    if len(scores) == 0:\n        return 0.0\n    s = 0\n    for x in scores:\n        s = s + x\n    return s / len(scores)\n",
+    "artifact_type": "python_code",
+    "context": "Score aggregation utility (maintainability sweep)",
+    "calibration_dim": "v7_maintainability"
+  },
+  {
+    "id": "mnt_02_poor",
+    "code": "def avg(l):\n    s=0\n    n=0\n    for x in l:\n        s=s+x\n        n=n+1\n    if n>0:\n        r=s/n\n    else:\n        r=0\n    return r\n",
+    "artifact_type": "python_code",
+    "context": "Score aggregation utility (maintainability sweep)",
+    "calibration_dim": "v7_maintainability"
+  },
+  {
+    "id": "mnt_03_bad",
+    "code": "def f(a):\n    x=0;y=0;z=0\n    for i in a:\n        x=x+i\n        y=y+1\n        z=x/y if y>0 else 0\n        tmp=z*2\n        unused=tmp+1\n    if y!=0:\n        return x/y\n    return 0\n",
+    "artifact_type": "python_code",
+    "context": "Score aggregation utility (maintainability sweep)",
+    "calibration_dim": "v7_maintainability"
+  },
+  {
+    "id": "mnt_04_awful",
+    "code": "def f(a,b=None,c=None):\n    x=0;y=0;z=0;q=0;w=0\n    for i in a:\n        x=x+i;y=y+1\n        if b:\n            for j in range(i):\n                z=z+j\n                if c:\n                    q=q+(z*y-x)/(y+1)\n                    w=q if q>0 else w\n    d=x/y if y else 0\n    e=z/y if y else 0\n    return (d,e,q,w)\n",
+    "artifact_type": "python_code",
+    "context": "Score aggregation utility (maintainability sweep)",
+    "calibration_dim": "v7_maintainability"
+  }
+]

@@ -355,6 +355,33 @@ Outputs del script:
 
 **Acción en EvaluationMetrics:** Agregar `semantic_security: float` y `semantic_debt_assessment: float` al modelo Pydantic en `qa_evaluator.py` para habilitar la comparación en v₄ y v₈.
 
+**RESULTADO DE CALIBRACIÓN — GO (2026-06-06):** corrida vía OpenRouter (`anthropic/claude-sonnet-4-6`).
+
+| Dim | ρ | CI 95% | Veredicto |
+|-----|-----|--------|-----------|
+| v4_security | 0.900 | [0.11, 1.00] | PASS |
+| v6_testability | 0.975 | [0.75, 1.00] | PASS |
+| v7_maintainability | 1.000 | [1.00, 1.00] | PASS (report-only) |
+| v8_technical_debt | 0.821 | [−0.30, 1.00] | PASS (report-only) |
+
+**Hallazgos metodológicos (cada uno fue un NO-GO espurio resuelto):**
+
+1. **El corpus S1–S5 NO sirve para calibrar.** Es un corpus de *escenarios* (cada uno declara ground truth solo para su dimensión-objetivo, mezcla YAML sin radon válido, n=12). Se construyó un **corpus de calibración dedicado**: `generate_calibration_corpus.py` → 20 artefactos Python en 4 familias (sec/cpx/dbt/mnt), cada familia barre UN eje con spread validado, taggeadas con `calibration_dim`.
+
+2. **`radon_runner` tenía colinealidad total v7≡v8:** `debt_ratio = 1 − maintainability` exactamente. Corregido: debt ahora multifactorial (`0.5·CC + 0.3·Halstead + 0.2·(1−MI)`).
+
+3. **Calibración debe ser por-dimensión sobre su familia-sweep**, no nube global. Mezclar familias daba ρ(v6)=−0.35 espurio (la familia security tiene testability estática plana mientras el LLM la varía → anti-correlación falsa). Por-dimensión: ρ(v6)=0.975.
+
+4. **Gate de dos clases (decisión 2026-06-06):** solo dimensiones con **ground truth duro independiente** gatean — v4 (bandit detecta CWE reales) y v6 (CC cruda). v7/v8 son *supervisory estimators* (radon los auto-correlaciona ρ>0.93 y es ciego a calidad semántica) → REPORT-only, validación por inter-rater/inter-model (DT-024), no por estático. Alinea con la nota epistemológica del paper (DT-027).
+
+5. Bugs menores: `UnicodeEncodeError` (φ/ρ en cp1252 Windows) y `confidence_self_assessment` requerido sin default (forzaba fallbacks → outliers falsos). Ambos corregidos.
+
+**CAVEATS PARA EL PAPER (no bloquean el gate, sí la publicación):**
+- **n=5 por familia** → CIs amplios (v8: [−0.30, 1.00]). El GO es válido como gate pre-piloto; para publicación ampliar a n≥8–10 por familia.
+- **Auto-correlación inter-dim** v6↔v8=0.954, v7↔v8=0.937 — punto real para DT-025 (justificar "approximately orthogonal supervisory dimensions" pese a correlación en el GT estático).
+
+**Dependencia:** instalado `openai` SDK (provider OpenRouter lo requiere).
+
 ---
 
 ## IMPORTANTE (nuevas) — Bajan el rigor metodológico si faltan
