@@ -54,6 +54,14 @@ for _stream in (sys.stdout, sys.stderr):
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO, format="%(levelname)s  %(message)s")
 
+# Load .env so OPENROUTER_API_KEY / LLM_PROVIDER are available without
+# requiring the caller to export them explicitly.
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv optional; caller can set env vars manually
+
 # ── Threshold ──────────────────────────────────────────────────────────────────
 SPEARMAN_THRESHOLD = 0.75
 
@@ -484,6 +492,7 @@ def main() -> None:
     parser.add_argument("--corpus", required=True, help="Path to corpus JSON file")
     parser.add_argument("--output", default=None, help="Path to save calibration report JSON")
     parser.add_argument("--no-plots", action="store_true", help="Skip scatter plot generation")
+    parser.add_argument("--cache", default=None, help="Path to LLM cache JSON (read+write)")
     args = parser.parse_args()
 
     corpus_path = Path(args.corpus)
@@ -493,11 +502,13 @@ def main() -> None:
 
     corpus = json.loads(corpus_path.read_text(encoding="utf-8"))
     output_path = Path(args.output) if args.output else None
+    llm_cache_path = Path(args.cache) if args.cache else None
 
     report = run_calibration(
         corpus=corpus,
         output_path=output_path,
         generate_plots=not args.no_plots,
+        llm_cache_path=llm_cache_path,
     )
 
     sys.exit(0 if report.overall_verdict == "GO" else 1)

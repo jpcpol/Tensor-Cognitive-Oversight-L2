@@ -134,6 +134,72 @@ def shell(cmd):
 PASSWORD = "admin123"
 SECRET_KEY = "hardcoded-secret-do-not-do-this"
 ''',
+    # Extra artifacts to bring SEC family to n=8, filling intermediate severity points
+    "sec_05_low_b": '''\
+import subprocess
+import logging
+
+logger = logging.getLogger(__name__)
+
+
+def run_report(report_name: str):
+    """Fixed args list — low risk; subprocess without shell=True."""
+    result = subprocess.run(
+        ["generate_report", "--name", report_name],
+        capture_output=True, text=True, timeout=30,
+    )
+    logger.info("Report exit code: %d", result.returncode)
+    return result.stdout
+
+
+def hash_value(v: str) -> str:
+    import hashlib
+    return hashlib.md5(v.encode()).hexdigest()  # noqa: S324 — medium: md5 use
+''',
+    "sec_06_medium_b": '''\
+import tempfile
+import os
+import logging
+
+logger = logging.getLogger(__name__)
+
+DEBUG_KEY = "debug-only-not-prod"  # noqa: S105 — hardcoded string
+
+
+def write_temp(content: str) -> str:
+    """Writes user content to a temp file — path traversal risk if content has ../."""
+    tmp = tempfile.mktemp(suffix=".txt")  # noqa: S306 — insecure mktemp
+    with open(tmp, "w") as f:
+        f.write(content)
+    logger.debug("Wrote to %s", tmp)
+    return tmp
+
+
+def load_yaml(path: str):
+    import yaml
+    with open(path) as f:
+        return yaml.load(f.read(), Loader=yaml.Loader)  # noqa: S506 — unsafe loader
+''',
+    "sec_07_high_b": '''\
+import subprocess
+import os
+
+
+def run_pipeline(stage: str, user_file: str):
+    """Shell injection via string concatenation."""
+    cmd = f"python pipeline.py --stage {stage} --input {user_file}"
+    return subprocess.run(cmd, shell=True, capture_output=True).stdout  # noqa: S602
+
+
+def read_secret():
+    db_password = "prod_password_1234"  # noqa: S105
+    api_token = "Bearer sk-live-abcdef123456"  # noqa: S105
+    return db_password, api_token
+
+
+def exec_user(code: str):
+    exec(code)  # noqa: S102 — arbitrary code execution
+''',
 }
 
 
@@ -161,6 +227,10 @@ _CPX = {
     "cpx_02_mid": _cpx(9),
     "cpx_03_high": _cpx(16),
     "cpx_04_extreme": _cpx(26),
+    # Extra artifacts: fill intermediate CC levels for tighter ρ estimate
+    "cpx_05_low_b": _cpx(2),
+    "cpx_06_mid_b": _cpx(6),
+    "cpx_07_high_b": _cpx(20),
 }
 
 
@@ -198,6 +268,10 @@ _DBT = {
     "dbt_02_medium": _dbt(5, branchy=True),
     "dbt_03_large": _dbt(9, branchy=True),
     "dbt_04_sprawl": _dbt(14, branchy=True),
+    # Extra artifacts: fill intermediate debt levels
+    "dbt_05_tiny_b": _dbt(2, branchy=False),
+    "dbt_06_medium_b": _dbt(7, branchy=True),
+    "dbt_07_sprawl_b": _dbt(18, branchy=True),
 }
 
 
@@ -266,6 +340,55 @@ def f(a,b=None,c=None):
     d=x/y if y else 0
     e=z/y if y else 0
     return (d,e,q,w)
+''',
+    # Extra artifacts: intermediate maintainability levels
+    "mnt_05_ok_b": '''\
+def compute_average(values: list) -> float:
+    """Compute mean of values, return 0.0 if empty."""
+    total = 0.0
+    count = 0
+    for v in values:
+        total += v
+        count += 1
+    if count == 0:
+        return 0.0
+    return total / count
+''',
+    "mnt_06_poor_b": '''\
+def calc(lst, mode=0):
+    s = 0
+    n = 0
+    for item in lst:
+        if mode == 0:
+            s += item
+        elif mode == 1:
+            s += item * 2
+        elif mode == 2:
+            s += item ** 2
+        else:
+            s += item
+        n += 1
+    res = s / n if n > 0 else 0
+    tmp = res
+    return tmp
+''',
+    "mnt_07_bad_b": '''\
+def p(d,m=0,x=None,y=None):
+    a=0;b=0;c=0
+    for i in d:
+        a+=i
+        b+=1
+        if m:
+            c+=i*m
+        if x and i>x:
+            a=a-i
+        if y:
+            b=b+y
+    r1=a/b if b else 0
+    r2=c/b if b else 0
+    q=r1+r2
+    unused_var=q*2
+    return r1,r2
 ''',
 }
 

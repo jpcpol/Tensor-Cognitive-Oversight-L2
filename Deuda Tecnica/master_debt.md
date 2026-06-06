@@ -355,7 +355,7 @@ Outputs del script:
 
 **Acción en EvaluationMetrics:** Agregar `semantic_security: float` y `semantic_debt_assessment: float` al modelo Pydantic en `qa_evaluator.py` para habilitar la comparación en v₄ y v₈.
 
-**RESULTADO DE CALIBRACIÓN — GO (2026-06-06):** corrida vía OpenRouter (`anthropic/claude-sonnet-4-6`).
+**RESULTADO DE CALIBRACIÓN v1 — GO (2026-06-06, n=5/familia):** corrida vía OpenRouter (`anthropic/claude-sonnet-4-6`).
 
 | Dim | ρ | CI 95% | Veredicto |
 |-----|-----|--------|-----------|
@@ -364,21 +364,35 @@ Outputs del script:
 | v7_maintainability | 1.000 | [1.00, 1.00] | PASS (report-only) |
 | v8_technical_debt | 0.821 | [−0.30, 1.00] | PASS (report-only) |
 
+**RESULTADO DE CALIBRACIÓN v2 — GO (2026-06-06, n=8/familia, 32 artefactos):** corpus expandido con 3 artefactos intermedios por familia. CIs sustancialmente más ajustados. Corpus: `generate_calibration_corpus.py` → corpus v2.
+
+| Dim | ρ | CI 95% | Veredicto |
+|-----|-----|--------|-----------|
+| v4_security | 0.868 | [0.351, 1.000] | PASS (gate) |
+| v6_testability | 0.951 | [0.774, 1.000] | PASS (gate) |
+| v7_maintainability | 0.928 | [0.615, 1.000] | PASS (report-only) |
+| v8_technical_debt | 0.913 | [0.607, 0.974] | PASS (report-only) |
+
+Mejora clave: CI inferior v8 pasó de −0.30 → **+0.607** (publicable). v4 y v6 tienen CI inferior ≥0.35 y ≥0.77 respectivamente.
+
 **Hallazgos metodológicos (cada uno fue un NO-GO espurio resuelto):**
 
-1. **El corpus S1–S5 NO sirve para calibrar.** Es un corpus de *escenarios* (cada uno declara ground truth solo para su dimensión-objetivo, mezcla YAML sin radon válido, n=12). Se construyó un **corpus de calibración dedicado**: `generate_calibration_corpus.py` → 20 artefactos Python en 4 familias (sec/cpx/dbt/mnt), cada familia barre UN eje con spread validado, taggeadas con `calibration_dim`.
+1. **El corpus S1–S5 NO sirve para calibrar.** Es un corpus de *escenarios* (cada uno declara ground truth solo para su dimensión-objetivo, mezcla YAML sin radon válido, n=12). Se construyó un **corpus de calibración dedicado**: `generate_calibration_corpus.py` → 32 artefactos Python en 4 familias (sec/cpx/dbt/mnt), cada familia barre UN eje con spread validado, taggeadas con `calibration_dim`.
 
 2. **`radon_runner` tenía colinealidad total v7≡v8:** `debt_ratio = 1 − maintainability` exactamente. Corregido: debt ahora multifactorial (`0.5·CC + 0.3·Halstead + 0.2·(1−MI)`).
 
-3. **Calibración debe ser por-dimensión sobre su familia-sweep**, no nube global. Mezclar familias daba ρ(v6)=−0.35 espurio (la familia security tiene testability estática plana mientras el LLM la varía → anti-correlación falsa). Por-dimensión: ρ(v6)=0.975.
+3. **Calibración debe ser por-dimensión sobre su familia-sweep**, no nube global. Mezclar familias daba ρ(v6)=−0.35 espurio (la familia security tiene testability estática plana mientras el LLM la varía → anti-correlación falsa). Por-dimensión: ρ(v6)=0.951.
 
 4. **Gate de dos clases (decisión 2026-06-06):** solo dimensiones con **ground truth duro independiente** gatean — v4 (bandit detecta CWE reales) y v6 (CC cruda). v7/v8 son *supervisory estimators* (radon los auto-correlaciona ρ>0.93 y es ciego a calidad semántica) → REPORT-only, validación por inter-rater/inter-model (DT-024), no por estático. Alinea con la nota epistemológica del paper (DT-027).
 
 5. Bugs menores: `UnicodeEncodeError` (φ/ρ en cp1252 Windows) y `confidence_self_assessment` requerido sin default (forzaba fallbacks → outliers falsos). Ambos corregidos.
 
-**CAVEATS PARA EL PAPER (no bloquean el gate, sí la publicación):**
-- **n=5 por familia** → CIs amplios (v8: [−0.30, 1.00]). El GO es válido como gate pre-piloto; para publicación ampliar a n≥8–10 por familia.
-- **Auto-correlación inter-dim** v6↔v8=0.954, v7↔v8=0.937 — punto real para DT-025 (justificar "approximately orthogonal supervisory dimensions" pese a correlación en el GT estático).
+6. **Scope Python-only:** radon/bandit solo corren en Python. Para YAML/CI-CD (S2/S4), solo dims semánticas (LLM) son significativas; v4/v6/v8 caen en fallbacks constantes. La afirmación de calibración φ≥0.75 aplica estrictamente a artefactos Python. Agregar nota en §4.2.3.
+
+**CAVEATS PARA EL PAPER:**
+
+- **Auto-correlación inter-dim** v6↔v8=0.948, v7↔v8=0.943 (leve mejora respecto a n=5: era 0.954/0.937) — punto real para DT-025 (justificar "approximately orthogonal supervisory dimensions" pese a correlación en el GT estático). El sistema reporta `*** JUSTIFY OR FUSE ***` para pares >0.90.
+- **n=8 por familia** satisface publicación (CI inferior ≥0.35 en todas las dims). Caveat restante: v4 CI=[0.351, 1.000] — sigue amplio por el bajo spread de bandit en niveles bajos/medios.
 
 **Dependencia:** instalado `openai` SDK (provider OpenRouter lo requiere).
 

@@ -36,5 +36,6 @@ analysis/figures/effect_sizes.csv
 # DT-021 φ-calibration outputs (regenerable; LLM cache is run-specific).
 # The dedicated corpus (calibration_corpus.json) + generator ARE tracked.
 src/experiment/phi_calibration/.llm_cache_corpus2.json
+src/experiment/phi_calibration/.llm_cache_corpus3.json
 src/experiment/phi_calibration/calibration_report.json
 src/experiment/phi_calibration/phi_calibration_plots/
