@@ -1,8 +1,0 @@
-En cual de los dos aspectos se destaca mejor TCO y como se integra CAL a estas estos niveles de trabajo IA?
-
-Prompt prossessing (PP) Pre-fill
-token genertion (TG) Decode
-
-En que benedicoa CAL a en estas areas?
-
-Consideremos que las empresas como nvidia estan apostando a que la IA funcione loca como la nueva apuesta de nvidie con rtx spark. Por ende me gustaria saber si nuestra investigacion puede enmarcarse en este nuevo rumbo.
