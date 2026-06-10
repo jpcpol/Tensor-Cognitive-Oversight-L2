@@ -4,6 +4,7 @@
 
 **Working Paper — Confidential Draft for Peer Review**
 **2026 · v3.1 — Includes Experimental Design, MVP Architecture & Software Implementation Plan**
+**DOI:** [10.5281/zenodo.20628131](https://doi.org/10.5281/zenodo.20628131) · License: CC BY-NC 4.0 (docs) + AGPL-3.0 (src)
 
 > *This paper formalizes and empirically validates Layer 2 (L2) of the CAL architecture [Chancay 2026b]. The full five-level research agenda (L0–L4) — spanning L0 raw artifacts to L4 autonomous meta-inference — is described in the companion pre-paper, canonically at `CAL/CAL_PrePaper_v1.4.md` (DOI [10.5281/zenodo.20430343](https://doi.org/10.5281/zenodo.20430343)).*
 >
