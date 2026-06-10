@@ -265,9 +265,9 @@ Formal annotation: [`Documentacion/CAL_Benchmark_v1.md`](Documentacion/CAL_Bench
 
 | Item | Status |
 |------|--------|
-| DT-028 Phase 3 — production deploy (SMTP email, Postgres, `/cal` path on `sspa_infra`) | 🟡 Local deploy verified end-to-end; prod pending |
-| φ calibration result gate (Spearman ρ ≥ 0.75 vs ground truth) | 🟡 Suite implemented; result run pending |
-| Pilot n=4 | ⏳ Gated on the two above |
+| φ calibration result gate (Spearman ρ ≥ 0.75 vs ground truth) | ✅ **GO** (2026-06-06, n=8/family, 32 artifacts): v4=0.868, v6=0.951 (gated); v7=0.928, v8=0.913 (report-only). Lower CIs ≥ 0.35. Python-only scope. See DT-021 |
+| Pilot n=4 | 🟢 **Unblocked** — runs on the verified local deploy; does not require Phase 3 |
+| DT-028 Phase 3 — production deploy (SMTP email, Postgres, `/cal` path on `sspa_infra`) | 🟡 Local deploy verified end-to-end; prod pending (post-pilot) |
 
 ### Technology Stack
 

@@ -865,5 +865,5 @@ La diferencia clave: CAL no intenta explicar *por qué* el sistema hizo lo que h
 
 ---
 
-*Última actualización: 2026-06-04 — DT-028 Fases 1–2 verificadas en deploy local end-to-end (participante + admin); docs sincronizadas (README, CLAUDE.md, wiki). DT-032 commiteado (pre-registro H_cross con M_advantage).*  
-*Próxima revisión: DT-028 Fase 3 (deploy prod + SMTP + Postgres) · gate calibración φ (ρ≥0.75) · piloto n=4*
+*Última actualización: 2026-06-10 — gate de calibración φ **GO confirmado** (DT-021 v2, 2026-06-06: n=8/familia, todas ρ ≥ 0.85, CI inferior v8 +0.607); piloto n=4 desbloqueado (corre sobre deploy local verificado). Capas downstream cerradas: L3 caracterización (~95%) + L4 S5 mecanismo/L4-B0 NO-GO.*  
+*Próxima revisión: piloto n=4 (deploy local) · MoU/reclutamiento en paralelo · DT-028 Fase 3 (deploy prod + SMTP + Postgres, post-piloto) · DT-024 (inter-model, vía de validación oficial de v7/v8, pre-submission)*

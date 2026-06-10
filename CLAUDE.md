@@ -110,7 +110,11 @@ Layer 1 — AI Generation: code_agent, design_agent, deploy_agent, test_agent
 | `analysis/sid_study/`           | ✅ SID Study + pre-registro H_cross (M_advantage) |
 | `analysis/` (H1–H5, H_OBS, ANCOVA) | ✅ pipeline estadístico `--dry-run` |
 
-**Deploy local verificado (Junio 2026):** backend (uvicorn, SQLite) + frontend (Vite) levantados; flujo participante (registro estratificado → consent → runner T1–T4 → NCF) y admin (listado → invite) probados end-to-end. Pendiente: DT-028 Fase 3 (deploy prod + SMTP), gate de calibración φ (ρ≥0.75), piloto n=4.
+**Deploy local verificado (Junio 2026):** backend (uvicorn, SQLite) + frontend (Vite) levantados; flujo participante (registro estratificado → consent → runner T1–T4 → NCF) y admin (listado → invite) probados end-to-end.
+
+**Gate de calibración φ — ✅ GO (2026-06-06, DT-021 v2):** n=8/familia (32 artefactos Python), v4=0.868 y v6=0.951 (gatean), v7=0.928 y v8=0.913 (report-only, validación vía DT-024 inter-model). Scope Python-only. Detalle en `Deuda Tecnica/master_debt.md` §DT-021.
+
+**Pendiente:** piloto n=4 (desbloqueado — corre sobre deploy local) → DT-028 Fase 3 (deploy prod + SMTP + Postgres, post-piloto) · MoU/reclutamiento en paralelo · DT-024 pre-submission.
 
 Roadmap de 10 semanas: Sem 1–4 Build → Sem 5 Pilot → Sem 6 Calibración → Sem 7–8 Experimento → Sem 9–10 Análisis + Writing.
 
