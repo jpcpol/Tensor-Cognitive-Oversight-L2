@@ -3,9 +3,11 @@
 #### Layer 2 of the Cognitive Abstraction Layer (CAL) Architecture
 
 **Working Paper — Confidential Draft for Peer Review**
-**2026 · v3.0 — Includes Experimental Design, MVP Architecture & Software Implementation Plan**
+**2026 · v3.1 — Includes Experimental Design, MVP Architecture & Software Implementation Plan**
 
-> *This paper formalizes and empirically validates Layer 2 (L2) of the CAL architecture [Chancay 2026b]. The full four-level research agenda — spanning L0 raw artifacts to L4 autonomous meta-inference — is described in the companion pre-paper: `Documentacion/CAL_PrePaper_v1.md`.*
+> *This paper formalizes and empirically validates Layer 2 (L2) of the CAL architecture [Chancay 2026b]. The full five-level research agenda (L0–L4) — spanning L0 raw artifacts to L4 autonomous meta-inference — is described in the companion pre-paper, canonically at `CAL/CAL_PrePaper_v1.4.md` (DOI [10.5281/zenodo.20430343](https://doi.org/10.5281/zenodo.20430343)).*
+>
+> *Inter-layer status (June 2026): the L2 contribution below — the tensor framework, the NCF, and the n=40 RCT design — is unchanged. Since v3.0, the layers L2 feeds have advanced: **L3's characterization closed** (the composition operator C is characterized; causal conservation = structural sparsity preservation, not reconstruction fidelity) and **L4's gate-C is met** (κ(V)=1296 delivered; the κ vs n² cost contrast is active). These results validate, downstream, that the tensor representation L2 produces carries the causal structure higher layers need. See `CAL/L3/L3_CLOSURE.md` and the pre-paper §5.7. This is a v3.1 status note only; no L2 experimental claim is altered.*
 
 ---
 
